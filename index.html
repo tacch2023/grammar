@@ -127,7 +127,10 @@ textarea{width:100%;font-family:var(--f-en);font-size:21px;line-height:1.45;colo
 .sheet{position:fixed;inset:0;background:rgba(10,14,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;
   padding:0 max(12px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(12px,env(safe-area-inset-left,0px))}
 .sheet .panel{background:var(--surface);width:100%;max-width:760px;max-height:86vh;border-radius:16px 16px 0 0;padding:20px;display:flex;flex-direction:column;gap:12px}
-.sheet textarea{font-family:var(--f-mono);font-size:13px;min-height:240px;flex:1}
+.sheet textarea{font-family:var(--f-mono);font-size:16px;min-height:240px;flex:1}
+.sheet.top{align-items:flex-start;padding-top:max(32px,env(safe-area-inset-top,0px))}
+.sheet.top .panel{border-radius:16px}
+.fb:focus{outline:none}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;z-index:30}
 .switch{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
 .acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 14px}
@@ -152,12 +155,13 @@ textarea{width:100%;font-family:var(--f-en);font-size:21px;line-height:1.45;colo
     <div class="row"><button class="primary" id="sheet-copy">复制</button><button id="sheet-apply" hidden>恢复进度</button></div>
   </div>
 </div>
-<div class="sheet" id="login" hidden>
+<div class="sheet top" id="login" hidden>
   <div class="panel">
     <div class="row" style="justify-content:space-between"><h3>登录同步进度</h3><button class="ghost" id="lg-close">关闭</button></div>
     <p class="muted" style="margin:0;font-size:14px">用邮箱注册一个账号。登录后练习进度会自动保存到云端，在任何设备上登录都能接着练。本机已有的进度会在第一次登录时一起合并上传。</p>
     <label class="fld"><span>邮箱</span><input type="email" id="lg-email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <label class="fld"><span>密码（至少 6 位）</span><input type="password" id="lg-pass" autocomplete="current-password"></label>
+    <label class="switch"><input type="checkbox" id="lg-show"> 显示密码</label>
     <div class="msg" id="lg-msg" hidden></div>
     <div class="row"><button class="primary" id="lg-in">登录</button><button id="lg-up">注册新账号</button><button class="ghost" id="lg-reset">忘记密码</button></div>
   </div>
@@ -1010,8 +1014,10 @@ function localSave(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){S.ts=Date.now();localSave();scheduleUpload()}
 
 /* ---------- cloud sync (Firebase) ---------- */
-let FB=false,auth=null,db=null,USER=null,SYNC={state:"ok",at:0},upTimer=null;
-try{if(window.firebase&&!String(FIREBASE_CONFIG.apiKey).startsWith("PASTE")){firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();FB=true;try{auth.languageCode="zh-CN"}catch(e){}}}catch(e){console.error(e)}
+let FB=false,FBDOWN=false,auth=null,db=null,USER=null,SYNC={state:"ok",at:0},upTimer=null;
+const CONFIGURED=!String(FIREBASE_CONFIG.apiKey).startsWith("PASTE");
+if(CONFIGURED&&!window.firebase)FBDOWN=true;
+try{if(window.firebase&&CONFIGURED){firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();FB=true;try{auth.languageCode="zh-CN"}catch(e){}}}catch(e){console.error(e)}
 function merge(a,b){
   const o=fresh();o.ts=Math.max(a.ts||0,b.ts||0);
   o.unlockAll=((a.ts||0)>=(b.ts||0)?a:b).unlockAll||false;
@@ -1025,30 +1031,42 @@ function merge(a,b){
   return o;
 }
 const canSync=()=>FB&&USER&&USER.emailVerified;
+async function freshToken(){try{const r=await USER.getIdTokenResult();if(!r.claims.email_verified)await USER.getIdToken(true)}catch(e){}}
+async function withAuth(fn){await freshToken();try{return await fn()}catch(e){if(e&&e.code==="permission-denied"){await USER.getIdToken(true);return await fn()}throw e}}
+function withTimeout(p,ms){let t;return Promise.race([p,new Promise((_,rej)=>{t=setTimeout(()=>rej({code:"timeout"}),ms)})]).finally(()=>clearTimeout(t))}
+const SYNC_MSG={"permission-denied":"没有权限，请检查数据库规则","unavailable":"网络不可用","timeout":"网络超时","not-found":"找不到数据库",
+  "failed-precondition":"数据库还没建好","resource-exhausted":"今天的免费额度用完了，明天自动恢复","unauthenticated":"登录已过期，请退出后重新登录"};
+let upBusy=false,upAgain=false,failCount=0,retryTimer=null;
 function scheduleUpload(){if(!canSync())return;SYNC.state="busy";renderAcct();clearTimeout(upTimer);upTimer=setTimeout(upload,1200)}
 async function upload(){
-  clearTimeout(upTimer);upTimer=null;if(!canSync())return;
-  try{await db.collection("users").doc(USER.uid).set({data:JSON.stringify(S),updatedAt:S.ts||Date.now(),email:USER.email||""});SYNC={state:"ok",at:Date.now()}}
-  catch(e){console.error(e);SYNC={state:"err",at:SYNC.at};setTimeout(scheduleUpload,15000)}
-  renderAcct();
+  clearTimeout(upTimer);upTimer=null;if(!canSync())return false;
+  if(upBusy){upAgain=true;return new Promise(r=>{const w=setInterval(()=>{if(!upBusy){clearInterval(w);r(SYNC.state==="ok")}},200)})}
+  upBusy=true;let ok=false;
+  try{await withTimeout(withAuth(()=>db.collection("users").doc(USER.uid).set({data:JSON.stringify(S),updatedAt:S.ts||Date.now(),email:USER.email||""})),20000);
+    SYNC={state:"ok",at:Date.now()};failCount=0;ok=true}
+  catch(e){console.error(e);SYNC={state:"err",at:SYNC.at,code:(e&&e.code)||"unknown"};failCount++;
+    clearTimeout(retryTimer);retryTimer=setTimeout(scheduleUpload,Math.min(300000,15000*2**(failCount-1)))}
+  finally{upBusy=false;renderAcct();if(upAgain){upAgain=false;if(ok)ok=await upload()}}
+  return ok;
 }
 let lastPull=0,pulling=false;
 async function pull(){
   if(!canSync()||pulling)return;pulling=true;lastPull=Date.now();
   SYNC.state="busy";renderAcct();
-  try{const d=await db.collection("users").doc(USER.uid).get();
+  try{const d=await withTimeout(withAuth(()=>db.collection("users").doc(USER.uid).get()),20000);
     let remoteNorm=null;
     if(d.exists&&d.data().data){const r=Object.assign(fresh(),JSON.parse(d.data().data));remoteNorm=JSON.stringify(merge(fresh(),r));S=merge(S,r)}
     localSave();
     if(remoteNorm!==JSON.stringify(S))await upload();else{SYNC={state:"ok",at:Date.now()};renderAcct()}
-    if(!SES)home();
-  }catch(e){console.error(e);SYNC.state="err";renderAcct()}
+    if(!SES)home(true);
+  }catch(e){console.error(e);SYNC={state:"err",at:SYNC.at,code:(e&&e.code)||"unknown"};renderAcct()}
   finally{pulling=false}
 }
 function ago(t){if(!t)return"";const s=(Date.now()-t)/1000;if(s<60)return"刚刚";if(s<3600)return Math.floor(s/60)+" 分钟前";if(s<86400)return Math.floor(s/3600)+" 小时前";return Math.floor(s/86400)+" 天前"}
 function renderAcct(){
   const el=document.getElementById("acct");if(!el)return;
-  if(!FB){el.innerHTML=`<span class="dot"></span><span class="txt muted">本机模式：云同步还没配置，进度只存在这台设备上</span>`;return}
+  if(!FB){el.innerHTML=FBDOWN?`<span class="dot err"></span><span class="txt">暂时连不上同步服务（可能是网络问题），进度先存在这台设备上。</span><button id="acct-reload">刷新页面</button>`:`<span class="dot"></span><span class="txt muted">本机模式：云同步还没配置，进度只存在这台设备上</span>`;
+    const rl=document.getElementById("acct-reload");if(rl)rl.onclick=()=>location.reload();return}
   if(!USER){el.innerHTML=`<span class="dot"></span><span class="txt">未登录 · 进度只存在这台设备上</span><button class="primary" id="acct-in">登录 / 注册</button>`;
     document.getElementById("acct-in").onclick=openLogin;return}
   if(!USER.emailVerified){
@@ -1056,8 +1074,9 @@ function renderAcct(){
     document.getElementById("acct-chk").onclick=()=>checkVerified(true);
     document.getElementById("acct-resend").onclick=()=>sendVerify().then(()=>toast("验证邮件已重新发送")).catch(e=>toast(AUTH_ERR[e.code]||"发送失败："+(e.code||e.message)));
     document.getElementById("acct-out").onclick=logout;return}
-  const st=SYNC.state==="busy"?"同步中…":SYNC.state==="err"?"同步失败，稍后自动重试":"已同步 "+ago(SYNC.at);
-  el.innerHTML=`<span class="dot ${SYNC.state}"></span><span class="txt">${esc(USER.email||"")} · ${st}</span><button class="ghost" id="acct-out">退出登录</button>`;
+  const st=SYNC.state==="busy"?"同步中…":SYNC.state==="err"?`同步失败：${esc(SYNC_MSG[SYNC.code]||"未知错误")}（${esc(String(SYNC.code))}）`:"已同步 "+ago(SYNC.at);
+  el.innerHTML=`<span class="dot ${SYNC.state}"></span><span class="txt">${esc(USER.email||"")} · ${st}</span>${SYNC.state==="err"?'<button id="acct-retry">重试</button>':""}<button class="ghost" id="acct-out">退出登录</button>`;
+  const rb=document.getElementById("acct-retry");if(rb)rb.onclick=()=>{failCount=0;lastPull=0;pull()};
   document.getElementById("acct-out").onclick=logout;
 }
 function sendVerify(){
@@ -1073,23 +1092,37 @@ async function checkVerified(manual){
   }catch(e){if(manual)toast(AUTH_ERR[e.code]||"检查失败，请稍后再试")}
 }
 async function logout(){
-  if(upTimer)await upload();
-  await auth.signOut();S=fresh();try{localStorage.removeItem(KEY)}catch(e){}
-  home();toast("已退出。进度保存在云端，下次登录会自动恢复");
+  const btn=document.getElementById("acct-out");if(btn){btn.disabled=true;btn.textContent="正在保存…"}
+  const synced=canSync();
+  if(synced&&(upTimer||upBusy||SYNC.state!=="ok")){
+    const ok=await upload();
+    if(!ok){renderAcct();toast("还有进度没同步成功。为了不丢数据，暂时不能退出，请联网后点“重试”");return}
+  }
+  try{await auth.signOut()}catch(e){renderAcct();toast("退出失败，请检查网络后再试");return}
+  if(synced){S=fresh();try{localStorage.removeItem(KEY)}catch(e){}home();toast("已退出。进度保存在云端，下次登录会自动恢复")}
+  else{home();toast("已退出。本机进度保留，验证邮箱并登录后会自动上传")}
 }
 const AUTH_ERR={"auth/invalid-email":"邮箱格式不对。","auth/missing-password":"请填写密码。","auth/weak-password":"密码至少要 6 位。",
   "auth/email-already-in-use":"这个邮箱已经注册过了，请直接点“登录”。","auth/invalid-credential":"邮箱或密码不对。还没有账号的话，请点“注册新账号”。",
   "auth/wrong-password":"密码不对。","auth/user-not-found":"这个邮箱还没注册，请点“注册新账号”。","auth/too-many-requests":"尝试次数太多，请过几分钟再试。",
-  "auth/network-request-failed":"网络连接失败，请检查网络后再试。","auth/operation-not-allowed":"Firebase 里还没开启“邮箱/密码”登录方式。"};
+  "auth/network-request-failed":"网络连接失败，请检查网络后再试。","auth/invalid-login-credentials":"邮箱或密码不对。还没有账号的话，请点“注册新账号”。",
+  "auth/user-disabled":"这个账号已被停用。","auth/missing-email":"请填写邮箱。","auth/quota-exceeded":"今天的发送次数用完了，请明天再试。",
+  "auth/unauthorized-domain":"这个网址还没加到 Firebase 的“已获授权的网域”里。","auth/operation-not-allowed":"Firebase 里还没开启“邮箱/密码”登录方式。"};
+function closeLogin(){document.getElementById("login").hidden=true;const p=document.getElementById("lg-pass");p.value="";p.type="password";document.getElementById("lg-show").checked=false}
 function openLogin(){const m=document.getElementById("lg-msg");m.hidden=true;document.getElementById("login").hidden=false;document.getElementById("lg-email").focus()}
 function lgMsg(t,info){const m=document.getElementById("lg-msg");m.textContent=t;m.className="msg"+(info?" info":"");m.hidden=false}
 function lgDo(fn){
   const em=document.getElementById("lg-email").value.trim(),pw=document.getElementById("lg-pass").value;
   if(!em){lgMsg("请填写邮箱。");return}
-  fn(em,pw).then(()=>{document.getElementById("login").hidden=true;document.getElementById("lg-pass").value="";if(auth.currentUser&&auth.currentUser.emailVerified)toast("登录成功，正在同步进度")})
+  const btns=["lg-in","lg-up","lg-reset"].map(id=>document.getElementById(id));btns.forEach(b=>b.disabled=true);
+  document.getElementById("lg-msg").hidden=true;
+  fn(em,pw).finally(()=>btns.forEach(b=>b.disabled=false)).then(()=>{closeLogin();if(auth.currentUser&&auth.currentUser.emailVerified)toast("登录成功，正在同步进度")})
     .catch(e=>lgMsg(AUTH_ERR[e.code]||("出错了："+(e.code||e.message))));
 }
 document.getElementById("lg-close").onclick=()=>{document.getElementById("login").hidden=true};
+document.getElementById("login").onclick=e=>{if(e.target.id==="login")document.getElementById("login").hidden=true};
+document.getElementById("lg-show").onchange=e=>{document.getElementById("lg-pass").type=e.target.checked?"text":"password"};
+document.getElementById("lg-email").onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();document.getElementById("lg-pass").focus()}};
 document.getElementById("lg-in").onclick=()=>lgDo((e,p)=>auth.signInWithEmailAndPassword(e,p));
 document.getElementById("lg-up").onclick=()=>lgDo((e,p)=>auth.createUserWithEmailAndPassword(e,p).then(c=>{USER=c.user;return sendVerify().then(()=>toast("注册成功，验证邮件已发到 "+e)).catch(()=>{})}));
 document.getElementById("lg-pass").onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();document.getElementById("lg-in").click()}};
@@ -1142,15 +1175,15 @@ function lcs(a,b){const A=a.map(tnorm),B=b.map(tnorm);const m=A.length,n=B.lengt
   return {len:d[0][0],ua,ub}}
 function closest(ans,refs){const a=tokens(ans);let best=null;
   refs.forEach(r=>{const b=tokens(r);const x=lcs(a,b);const sc=x.len/Math.max(a.length,b.length,1);if(!best||sc>best.sc)best={sc,r,a,b,x}});return best}
-const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function markLine(toks,used,cls){return toks.map((t,i)=>used[i]?esc(t):`<span class="${cls}">${esc(t)}</span>`).join(" ")}
 
 /* ---------- views ---------- */
 const app=document.getElementById("app");
 let SES=null;
 
-function home(){
-  SES=null;
+function home(keepScroll){
+  SES=null;document.onkeydown=null;
   const cur=currentUnit();
   const mastered=Object.values(S.units).filter(u=>u.mastered).length;
   const due=dueKeys(null).length;
@@ -1196,10 +1229,10 @@ function home(){
   app.querySelectorAll(".cell").forEach(c=>c.onclick=()=>{const n=+c.dataset.u;if(!unlocked(n)){toast(`先在 Unit ${n-1} 达到 80% 才能解锁`);return}startUnit(n)});
   document.getElementById("exp-wrong").onclick=exportWrong;
   document.getElementById("backup").onclick=()=>openSheet("备份进度","复制这段代码保存到备忘录。换设备或清除了浏览器数据时，用“恢复进度”粘贴回来。",JSON.stringify(S),false);
-  document.getElementById("restore").onclick=()=>openSheet("恢复进度","把之前备份的代码粘贴到下面，然后点“恢复进度”。当前进度会被覆盖。","",true);
+  document.getElementById("restore").onclick=()=>openSheet("恢复进度","把之前备份的代码粘贴到下面，然后点“恢复进度”。备份会和当前进度合并：每句保留最新的记录，过关过的单元保持过关。","",true);
   document.getElementById("unlock").onchange=e=>{S.unlockAll=e.target.checked;save();home()};
   renderAcct();
-  window.scrollTo(0,0);
+  if(!keepScroll)window.scrollTo(0,0);
 }
 
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -1225,7 +1258,7 @@ function practice(){
     <div class="zh">${esc(item.zh)}</div>
     <div class="row"><button class="ghost" id="hintbtn" style="min-height:36px;padding:4px 12px;font-size:14px">语法提示</button></div>
     <div class="hint" id="hint" hidden>${esc(unit.tip)}</div>
-    <textarea id="ans" rows="3" placeholder="Type the English sentence…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <textarea id="ans" rows="3" maxlength="300" placeholder="Type the English sentence…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     <div class="row"><button class="primary" id="check">检查</button><span class="kbd">回车检查 · Shift+回车换行</span></div>
     <div id="fb"></div>
   </div>`;
@@ -1235,8 +1268,11 @@ function practice(){
   ta.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();check()}};
   document.getElementById("check").onclick=check;
 
+  let checked=false;
   function check(){
+    if(checked)return;
     const ans=ta.value.trim();if(!ans){ta.focus();return}
+    checked=true;
     ta.readOnly=true;document.getElementById("check").hidden=true;
     const fb=document.getElementById("fb");
     const ok=isMatch(ans,item.refs);
@@ -1248,7 +1284,7 @@ function practice(){
         <div class="lines"><div class="ln"><span class="k">参考</span><span class="en">${esc(c.r)}</span></div></div>${altHtml}
         <div class="row"><button class="primary" id="next">下一题</button><span class="kbd">回车继续</span></div></div>`;
       record(k,ans,1,true);
-      const nx=document.getElementById("next");nx.onclick=advance;nx.focus();
+      const nx=document.getElementById("next");nx.focus({preventScroll:true});nx.scrollIntoView({block:"nearest",behavior:"smooth"});
     }else{
       fb.innerHTML=`<div class="fb"><div class="verdict check">和参考答案对比一下，再给自己打分</div>
         <div class="lines">
@@ -1256,15 +1292,17 @@ function practice(){
           <div class="ln"><span class="k">参考</span><span class="en">${markLine(c.b,c.x.ub,"miss")}</span></div>
         </div>${altHtml}
         <div class="kbd">红色划线 = 参考答案里没有的词；绿色 = 你漏掉或写法不同的词。同义改写算对。</div>
-        <div class="grade"><button class="g1" data-g="1">对（1）</button><button class="g2" data-g="0.5">部分对（2）</button><button class="g0" data-g="0">错（3）</button></div></div>`;
-      fb.querySelectorAll(".grade button").forEach(b=>b.onclick=()=>{record(k,ans,+b.dataset.g,false);advance()});
-      fb.querySelector(".g1").focus();
+        <div class="grade" id="grade"><button class="g1" data-g="1">对（1）</button><button class="g2" data-g="0.5">部分对（2）</button><button class="g0" data-g="0">错（3）</button></div></div>`;
+      let graded=false;const grade=g=>{if(graded)return;graded=true;record(k,ans,g,false);advance()};
+      fb.querySelectorAll(".grade button").forEach(b=>b.onclick=()=>grade(+b.dataset.g));
+      const box=fb.querySelector(".fb");box.tabIndex=-1;box.focus({preventScroll:true});
+      document.getElementById("grade").scrollIntoView({block:"nearest",behavior:"smooth"});
+      document.onkeydown=e=>{if(e.isComposing)return;if(["1","2","3"].includes(e.key)){e.preventDefault();grade([1,0.5,0][+e.key-1])}};
+      return;
     }
-    document.onkeydown=e=>{
-      if(e.isComposing)return;
-      if(ok&&e.key==="Enter"){e.preventDefault();advance()}
-      if(!ok&&["1","2","3"].includes(e.key)){e.preventDefault();record(k,ans,[1,0.5,0][+e.key-1],false);advance()}
-    };
+    let moved=false;const go=()=>{if(moved)return;moved=true;advance()};
+    document.getElementById("next").onclick=go;
+    document.onkeydown=e=>{if(e.isComposing)return;if(e.key==="Enter"){e.preventDefault();go()}};
   }
 }
 function record(k,ans,g,auto){
@@ -1272,7 +1310,7 @@ function record(k,ans,g,auto){
   if(g===1){it.box=Math.min(it.box+1,INTERVALS.length-1);it.due=now+INTERVALS[it.box]*DAY;it.right++}
   else if(g===0.5){it.box=Math.max(0,it.box-1);it.due=now+DAY/2;it.wrong++}
   else{it.box=0;it.due=now;it.wrong++}
-  it.last=ans;it.lastGrade=g;it.t=now;S.items[k]=it;
+  it.last=String(ans).slice(0,300);it.lastGrade=g;it.t=now;S.items[k]=it;
   SES.results.push({k,ans,g,auto});save();
 }
 function advance(){document.onkeydown=null;SES.idx++;if(SES.idx>=SES.queue.length)finish();else practice()}
@@ -1286,7 +1324,7 @@ function finish(){
     const complete=own.length===total;
     const st=Object.assign({attempts:0,best:0,last:0,mastered:false},S.units[n]);
     if(complete){const sc=pts/total;st.attempts++;st.last=sc;st.best=Math.max(st.best,sc);
-      const was=st.mastered;if(sc>=PASS)st.mastered=true;S.units[n]=st;S.log.push({t:Date.now(),u:n,sc});save();
+      const was=st.mastered;if(sc>=PASS)st.mastered=true;S.units[n]=st;S.log.push({t:Date.now(),u:n,sc});if(S.log.length>500)S.log=S.log.slice(-500);save();
       scoreHtml=`<div class="score">${fmt(pts)}<span class="muted" style="font-size:22px"> / ${total}</span></div>`;
       if(sc>=PASS){banner=`<div class="banner ok">Unit ${n} 过关${was?"（已掌握单元的复练）":""}。${n<N?`Unit ${n+1} 已解锁。`:""}</div>`;
         const nx=currentUnit();if(nx)nextBtn=`<button class="primary" id="nextu">继续 Unit ${nx}</button>`}
@@ -1312,7 +1350,7 @@ function finish(){
     <div class="card"><h3 style="font-size:16px">本轮句子</h3><div class="res">${list}</div></div>`;
   const nu=document.getElementById("nextu");if(nu)nu.onclick=()=>startUnit(currentUnit());
   const ag=document.getElementById("again");if(ag)ag.onclick=()=>startUnit(SES.unit);
-  document.getElementById("back").onclick=home;
+  document.getElementById("back").onclick=()=>home();
   const res=SES.results;
   document.getElementById("ai").onclick=()=>openSheet("复制给 AI 批改","粘贴到 Claude 或其他 AI，让它逐句批改。",buildMd(res.map(r=>({k:r.k,ans:r.ans,g:r.g,auto:r.auto})),"本轮练习"),false);
   window.scrollTo(0,0);
@@ -1362,13 +1400,13 @@ document.getElementById("sheet-copy").onclick=()=>{
   try{navigator.clipboard.writeText(stext.value).then(()=>toast("已复制，去粘贴给 AI 吧"),fallback)}catch(e){fallback()}
 };
 document.getElementById("sheet-apply").onclick=()=>{
-  try{const o=JSON.parse(stext.value);if(!o||typeof o!=="object"||!o.units)throw 0;S=Object.assign(fresh(),o);save();sheet.hidden=true;toast("进度已恢复");home()}
+  try{const o=JSON.parse(stext.value);if(!o||typeof o!=="object"||!o.units)throw 0;S=merge(S,Object.assign(fresh(),o));save();sheet.hidden=true;toast("进度已恢复");home()}
   catch(e){toast("这段代码无法识别，请粘贴完整的备份代码")}
 };
 let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400)}
 
 home();
-if(FB)auth.onAuthStateChanged(u=>{USER=u;renderAcct();if(u&&u.emailVerified)pull()});
+if(FB)auth.onAuthStateChanged(u=>{USER=u;if(u)closeLogin();renderAcct();if(u&&u.emailVerified){lastPull=0;pull()}});
 </script>
 </body>
 </html>
