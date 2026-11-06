@@ -1032,12 +1032,18 @@ async function upload(){
   catch(e){console.error(e);SYNC={state:"err",at:SYNC.at};setTimeout(scheduleUpload,15000)}
   renderAcct();
 }
+let lastPull=0,pulling=false;
 async function pull(){
+  if(!canSync()||pulling)return;pulling=true;lastPull=Date.now();
   SYNC.state="busy";renderAcct();
   try{const d=await db.collection("users").doc(USER.uid).get();
-    if(d.exists&&d.data().data){S=merge(S,Object.assign(fresh(),JSON.parse(d.data().data)))}
-    localSave();await upload();if(!SES)home();
+    let remoteNorm=null;
+    if(d.exists&&d.data().data){const r=Object.assign(fresh(),JSON.parse(d.data().data));remoteNorm=JSON.stringify(merge(fresh(),r));S=merge(S,r)}
+    localSave();
+    if(remoteNorm!==JSON.stringify(S))await upload();else{SYNC={state:"ok",at:Date.now()};renderAcct()}
+    if(!SES)home();
   }catch(e){console.error(e);SYNC.state="err";renderAcct()}
+  finally{pulling=false}
 }
 function ago(t){if(!t)return"";const s=(Date.now()-t)/1000;if(s<60)return"刚刚";if(s<3600)return Math.floor(s/60)+" 分钟前";if(s<86400)return Math.floor(s/3600)+" 小时前";return Math.floor(s/86400)+" 天前"}
 function renderAcct(){
@@ -1091,7 +1097,8 @@ document.getElementById("lg-reset").onclick=()=>{
   const em=document.getElementById("lg-email").value.trim();if(!em){lgMsg("先在上面填好你的邮箱，再点“忘记密码”。");return}
   auth.sendPasswordResetEmail(em).then(()=>lgMsg(`重置密码的邮件已发到 ${em}，没看到的话请查一下垃圾邮件。`,true)).catch(e=>lgMsg(AUTH_ERR[e.code]||("出错了："+e.code)));
 };
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&upTimer)upload();if(document.visibilityState==="visible"&&FB&&USER&&!USER.emailVerified)checkVerified(false)});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&upTimer)upload();if(document.visibilityState==="visible"&&FB&&USER){if(!USER.emailVerified)checkVerified(false);else if(Date.now()-lastPull>20000)pull()}});
+window.addEventListener("pageshow",e=>{if(e.persisted&&canSync())pull()});
 setInterval(renderAcct,30000);
 
 const uState=n=>S.units[n]||{attempts:0,best:0,last:0,mastered:false};
