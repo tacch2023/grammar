@@ -130,6 +130,14 @@ textarea{width:100%;font-family:var(--f-en);font-size:21px;line-height:1.45;colo
 .sheet textarea{font-family:var(--f-mono);font-size:13px;min-height:240px;flex:1}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;z-index:30}
 .switch{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 14px}
+.acct .txt{flex:1;min-width:0;overflow-wrap:anywhere}
+.acct button{min-height:36px;padding:6px 12px;font-size:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--ok)} .dot.busy{background:var(--mid)} .dot.err{background:var(--bad)}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+.fld input{font:inherit;font-size:17px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+.msg{font-size:14px;color:var(--bad)} .msg.info{color:var(--ok)}
 @media (max-width:480px){.zh{font-size:21px}textarea{font-size:19px}.grade{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.progress div{transition:none}}
 </style>
@@ -144,8 +152,32 @@ textarea{width:100%;font-family:var(--f-en);font-size:21px;line-height:1.45;colo
     <div class="row"><button class="primary" id="sheet-copy">复制</button><button id="sheet-apply" hidden>恢复进度</button></div>
   </div>
 </div>
+<div class="sheet" id="login" hidden>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between"><h3>登录同步进度</h3><button class="ghost" id="lg-close">关闭</button></div>
+    <p class="muted" style="margin:0;font-size:14px">用邮箱注册一个账号。登录后练习进度会自动保存到云端，在任何设备上登录都能接着练。本机已有的进度会在第一次登录时一起合并上传。</p>
+    <label class="fld"><span>邮箱</span><input type="email" id="lg-email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <label class="fld"><span>密码（至少 6 位）</span><input type="password" id="lg-pass" autocomplete="current-password"></label>
+    <div class="msg" id="lg-msg" hidden></div>
+    <div class="row"><button class="primary" id="lg-in">登录</button><button id="lg-up">注册新账号</button><button class="ghost" id="lg-reset">忘记密码</button></div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ====== 把 Firebase 控制台给你的配置粘贴在这里（替换整个大括号里的内容） ====== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCSLHUMN_LLcnjAfnRbQOogiMYrcr1gyNQ",
+  authDomain: "grammar-trainer-3c9d1.firebaseapp.com",
+  projectId: "grammar-trainer-3c9d1",
+  storageBucket: "grammar-trainer-3c9d1.firebasestorage.app",
+  messagingSenderId: "608905723573",
+  appId: "1:608905723573:web:6c4f8d2883815d3acb48fc"
+};
+</script>
 <script>
 // [unit, title, tip, [[中文, "英文参考|可接受的另一种说法"], ...]]
 const U = [
@@ -974,7 +1006,75 @@ const N=U.length;
 function fresh(){return {units:{},items:{},unlockAll:false,log:[]}}
 let S=load();
 function load(){try{const r=localStorage.getItem(KEY);if(r)return Object.assign(fresh(),JSON.parse(r))}catch(e){}return fresh()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function localSave(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){S.ts=Date.now();localSave();scheduleUpload()}
+
+/* ---------- cloud sync (Firebase) ---------- */
+let FB=false,auth=null,db=null,USER=null,SYNC={state:"ok",at:0},upTimer=null;
+try{if(window.firebase&&!String(FIREBASE_CONFIG.apiKey).startsWith("PASTE")){firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();FB=true}}catch(e){console.error(e)}
+function merge(a,b){
+  const o=fresh();o.ts=Math.max(a.ts||0,b.ts||0);
+  o.unlockAll=((a.ts||0)>=(b.ts||0)?a:b).unlockAll||false;
+  new Set([...Object.keys(a.units||{}),...Object.keys(b.units||{})]).forEach(n=>{
+    const x=(a.units||{})[n]||{},y=(b.units||{})[n]||{};
+    o.units[n]={attempts:Math.max(x.attempts||0,y.attempts||0),best:Math.max(x.best||0,y.best||0),
+      last:((x.attempts||0)>=(y.attempts||0)?x.last:y.last)||0,mastered:!!(x.mastered||y.mastered)}});
+  new Set([...Object.keys(a.items||{}),...Object.keys(b.items||{})]).forEach(k=>{
+    const x=(a.items||{})[k],y=(b.items||{})[k];o.items[k]=!x?y:!y?x:((x.t||0)>=(y.t||0)?x:y)});
+  const seen=new Set();o.log=[...(a.log||[]),...(b.log||[])].filter(l=>{const id=l.t+"-"+l.u;if(seen.has(id))return false;seen.add(id);return true}).sort((p,q)=>p.t-q.t).slice(-500);
+  return o;
+}
+function scheduleUpload(){if(!FB||!USER)return;SYNC.state="busy";renderAcct();clearTimeout(upTimer);upTimer=setTimeout(upload,1200)}
+async function upload(){
+  clearTimeout(upTimer);upTimer=null;if(!FB||!USER)return;
+  try{await db.collection("users").doc(USER.uid).set({data:JSON.stringify(S),updatedAt:S.ts||Date.now(),email:USER.email||""});SYNC={state:"ok",at:Date.now()}}
+  catch(e){console.error(e);SYNC={state:"err",at:SYNC.at};setTimeout(scheduleUpload,15000)}
+  renderAcct();
+}
+async function pull(){
+  SYNC.state="busy";renderAcct();
+  try{const d=await db.collection("users").doc(USER.uid).get();
+    if(d.exists&&d.data().data){S=merge(S,Object.assign(fresh(),JSON.parse(d.data().data)))}
+    localSave();await upload();if(!SES)home();
+  }catch(e){console.error(e);SYNC.state="err";renderAcct()}
+}
+function ago(t){if(!t)return"";const s=(Date.now()-t)/1000;if(s<60)return"刚刚";if(s<3600)return Math.floor(s/60)+" 分钟前";if(s<86400)return Math.floor(s/3600)+" 小时前";return Math.floor(s/86400)+" 天前"}
+function renderAcct(){
+  const el=document.getElementById("acct");if(!el)return;
+  if(!FB){el.innerHTML=`<span class="dot"></span><span class="txt muted">本机模式：云同步还没配置，进度只存在这台设备上</span>`;return}
+  if(!USER){el.innerHTML=`<span class="dot"></span><span class="txt">未登录 · 进度只存在这台设备上</span><button class="primary" id="acct-in">登录 / 注册</button>`;
+    document.getElementById("acct-in").onclick=openLogin;return}
+  const st=SYNC.state==="busy"?"同步中…":SYNC.state==="err"?"同步失败，稍后自动重试":"已同步 "+ago(SYNC.at);
+  el.innerHTML=`<span class="dot ${SYNC.state}"></span><span class="txt">${esc(USER.email||"")} · ${st}</span><button class="ghost" id="acct-out">退出登录</button>`;
+  document.getElementById("acct-out").onclick=logout;
+}
+async function logout(){
+  if(upTimer)await upload();
+  await auth.signOut();S=fresh();try{localStorage.removeItem(KEY)}catch(e){}
+  home();toast("已退出。进度保存在云端，下次登录会自动恢复");
+}
+const AUTH_ERR={"auth/invalid-email":"邮箱格式不对。","auth/missing-password":"请填写密码。","auth/weak-password":"密码至少要 6 位。",
+  "auth/email-already-in-use":"这个邮箱已经注册过了，请直接点“登录”。","auth/invalid-credential":"邮箱或密码不对。还没有账号的话，请点“注册新账号”。",
+  "auth/wrong-password":"密码不对。","auth/user-not-found":"这个邮箱还没注册，请点“注册新账号”。","auth/too-many-requests":"尝试次数太多，请过几分钟再试。",
+  "auth/network-request-failed":"网络连接失败，请检查网络后再试。","auth/operation-not-allowed":"Firebase 里还没开启“邮箱/密码”登录方式。"};
+function openLogin(){const m=document.getElementById("lg-msg");m.hidden=true;document.getElementById("login").hidden=false;document.getElementById("lg-email").focus()}
+function lgMsg(t,info){const m=document.getElementById("lg-msg");m.textContent=t;m.className="msg"+(info?" info":"");m.hidden=false}
+function lgDo(fn){
+  const em=document.getElementById("lg-email").value.trim(),pw=document.getElementById("lg-pass").value;
+  if(!em){lgMsg("请填写邮箱。");return}
+  fn(em,pw).then(()=>{document.getElementById("login").hidden=true;document.getElementById("lg-pass").value="";toast("登录成功，正在同步进度")})
+    .catch(e=>lgMsg(AUTH_ERR[e.code]||("出错了："+(e.code||e.message))));
+}
+document.getElementById("lg-close").onclick=()=>{document.getElementById("login").hidden=true};
+document.getElementById("lg-in").onclick=()=>lgDo((e,p)=>auth.signInWithEmailAndPassword(e,p));
+document.getElementById("lg-up").onclick=()=>lgDo((e,p)=>auth.createUserWithEmailAndPassword(e,p));
+document.getElementById("lg-pass").onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();document.getElementById("lg-in").click()}};
+document.getElementById("lg-reset").onclick=()=>{
+  const em=document.getElementById("lg-email").value.trim();if(!em){lgMsg("先在上面填好你的邮箱，再点“忘记密码”。");return}
+  auth.sendPasswordResetEmail(em).then(()=>lgMsg(`重置密码的邮件已发到 ${em}，没看到的话请查一下垃圾邮件。`,true)).catch(e=>lgMsg(AUTH_ERR[e.code]||("出错了："+e.code)));
+};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&upTimer)upload()});
+setInterval(renderAcct,30000);
 
 const uState=n=>S.units[n]||{attempts:0,best:0,last:0,mastered:false};
 const unlocked=n=>S.unlockAll||n===1||uState(n-1).mastered||uState(n).attempts>0;
@@ -1054,6 +1154,7 @@ function home(){
   <div class="top"><div><h1>剑桥语法中译英</h1><div class="sub">Essential Grammar in Use · 按掌握度逐单元推进</div></div>
     <div class="stats"><div class="stat"><b>${mastered}<span class="muted" style="font-size:14px">/115</span></b><span>已掌握单元</span></div>
     <div class="stat"><b>${due}</b><span>待复习</span></div><div class="stat"><b>${done}</b><span>练过的句子</span></div></div></div>
+  <div class="acct" id="acct"></div>
   ${nextHtml}
   <div class="map">
     <div class="legend"><span><i style="background:var(--ok);border-color:var(--ok)"></i>已掌握</span><span><i style="background:var(--accent-soft);border:2px solid var(--accent)"></i>当前</span><span><i style="background:var(--mid-soft);border-color:var(--mid)"></i>练过未过关</span><span><i style="background:var(--surface)"></i>可练</span><span><i style="background:var(--cell-locked);border-style:dashed"></i>未解锁</span></div>
@@ -1072,6 +1173,7 @@ function home(){
   document.getElementById("backup").onclick=()=>openSheet("备份进度","复制这段代码保存到备忘录。换设备或清除了浏览器数据时，用“恢复进度”粘贴回来。",JSON.stringify(S),false);
   document.getElementById("restore").onclick=()=>openSheet("恢复进度","把之前备份的代码粘贴到下面，然后点“恢复进度”。当前进度会被覆盖。","",true);
   document.getElementById("unlock").onchange=e=>{S.unlockAll=e.target.checked;save();home()};
+  renderAcct();
   window.scrollTo(0,0);
 }
 
@@ -1241,6 +1343,7 @@ document.getElementById("sheet-apply").onclick=()=>{
 let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400)}
 
 home();
+if(FB)auth.onAuthStateChanged(u=>{USER=u;renderAcct();if(u)pull()});
 </script>
 </body>
 </html>
