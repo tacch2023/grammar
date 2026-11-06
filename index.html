@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="语法中译英">
+<meta name="theme-color" content="#2c49c9">
+<style>
+html{color-scheme:light;-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>剑桥语法中译英</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one calm column, exam-screen feel — unit map on home, single sentence card when training */
+:root{
+  --bg:#f2f4f7; --surface:#ffffff; --ink:#151b26; --muted:#5d6676; --line:#dde2ea;
+  --accent:#2c49c9; --accent-soft:#e6ebfb; --ok:#1d7f48; --ok-soft:#e2f3e9;
+  --mid:#a76a0e; --mid-soft:#fbf0dc; --bad:#bf3329; --bad-soft:#fbe6e4;
+  --cell-locked:#e9ecf1;
+  --f-zh:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-en:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11151c; --surface:#1a2029; --ink:#e7eaf0; --muted:#98a1b1; --line:#2c3440;
+  --accent:#8ea3ff; --accent-soft:#232c4a; --ok:#5fc98b; --ok-soft:#173326;
+  --mid:#e3ad55; --mid-soft:#3a2c14; --bad:#f07a6f; --bad-soft:#3d1d1a; --cell-locked:#20262f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11151c; --surface:#1a2029; --ink:#e7eaf0; --muted:#98a1b1; --line:#2c3440;
+  --accent:#8ea3ff; --accent-soft:#232c4a; --ok:#5fc98b; --ok-soft:#173326;
+  --mid:#e3ad55; --mid-soft:#3a2c14; --bad:#f07a6f; --bad-soft:#3d1d1a; --cell-locked:#20262f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-zh);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 16px;min-height:44px}
+button:focus-visible,textarea:focus-visible,.cell:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+button.ghost{background:transparent}
+button:disabled{opacity:.45;cursor:default}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:500}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.top h1{font-size:24px;font-weight:700}
+.top .sub{font-size:13px;color:var(--muted)}
+.stats{display:flex;gap:20px;flex-wrap:wrap}
+.stat b{display:block;font-family:var(--f-mono);font-size:22px;font-weight:500;line-height:1.2}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* next card */
+.next{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.next .unit-no{font-family:var(--f-mono);color:var(--accent);font-size:14px}
+.next h2{font-size:20px}
+.next .tip{font-size:14px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* map */
+.map{display:flex;flex-direction:column;gap:14px}
+.sec{display:flex;flex-direction:column;gap:6px}
+.sec .label{display:flex;justify-content:space-between}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px}
+.cell{font-family:var(--f-mono);font-size:13px;height:44px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0;min-height:0;position:relative}
+.cell.locked{background:var(--cell-locked);color:var(--muted);border-style:dashed}
+.cell.tried{background:var(--mid-soft);border-color:var(--mid);color:var(--ink)}
+.cell.done{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.cell.cur{border:2px solid var(--accent);color:var(--accent);font-weight:700;background:var(--accent-soft)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px;border:1px solid var(--line)}
+
+.tools{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}
+.tools button{font-size:14px;min-height:40px;padding:8px 12px}
+
+/* practice */
+.bar{display:flex;align-items:center;gap:12px}
+.progress{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.progress div{height:100%;background:var(--accent);width:0;transition:width .25s}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px}
+.tag{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.chip{font-size:12px;border-radius:999px;padding:2px 10px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.chip.review{background:var(--mid-soft);color:var(--mid)}
+.zh{font-size:24px;font-weight:500;line-height:1.5}
+.hint{font-size:14px;color:var(--muted);background:var(--bg);border-radius:10px;padding:10px 12px}
+textarea{width:100%;font-family:var(--f-en);font-size:21px;line-height:1.45;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;resize:vertical;min-height:96px}
+.kbd{font-size:12px;color:var(--muted)}
+
+.fb{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
+.verdict{font-weight:700;font-size:17px}
+.verdict.ok{color:var(--ok)} .verdict.check{color:var(--accent)}
+.lines{display:flex;flex-direction:column;gap:8px}
+.ln{display:grid;grid-template-columns:3.2em 1fr;gap:8px;align-items:baseline}
+.ln .k{font-size:12px;color:var(--muted)}
+.en{font-family:var(--f-en);font-size:19px;line-height:1.5;min-width:0;overflow-wrap:anywhere}
+.en .miss{background:var(--ok-soft);color:var(--ok);border-bottom:2px solid var(--ok);border-radius:3px;padding:0 2px}
+.en .extra{background:var(--bad-soft);color:var(--bad);text-decoration:line-through;border-radius:3px;padding:0 2px}
+.alts{font-size:14px;color:var(--muted)}
+.alts .en{font-size:16px}
+.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grade button{font-weight:600}
+.grade .g1{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
+.grade .g2{border-color:var(--mid);color:var(--mid);background:var(--mid-soft)}
+.grade .g0{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+
+/* summary */
+.score{font-family:var(--f-mono);font-size:44px;line-height:1}
+.res{display:flex;flex-direction:column;gap:0}
+.res-item{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line)}
+.res-item .zhs{font-size:15px}
+.res-item .en{font-size:16px}
+.pill{font-size:12px;border-radius:999px;padding:1px 9px;font-weight:600}
+.pill.g1{background:var(--ok-soft);color:var(--ok)} .pill.g2{background:var(--mid-soft);color:var(--mid)} .pill.g0{background:var(--bad-soft);color:var(--bad)}
+.banner{border-radius:12px;padding:14px 16px;font-weight:500}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+.banner.mid{background:var(--mid-soft);color:var(--mid)}
+
+/* sheet */
+.sheet{position:fixed;inset:0;background:rgba(10,14,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;
+  padding:0 max(12px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(12px,env(safe-area-inset-left,0px))}
+.sheet .panel{background:var(--surface);width:100%;max-width:760px;max-height:86vh;border-radius:16px 16px 0 0;padding:20px;display:flex;flex-direction:column;gap:12px}
+.sheet textarea{font-family:var(--f-mono);font-size:13px;min-height:240px;flex:1}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;z-index:30}
+.switch{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+@media (max-width:480px){.zh{font-size:21px}textarea{font-size:19px}.grade{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.progress div{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="sheet" id="sheet" hidden>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between"><h3 id="sheet-title">导出</h3><button class="ghost" id="sheet-close">关闭</button></div>
+    <p class="muted" id="sheet-desc" style="margin:0;font-size:14px"></p>
+    <textarea id="sheet-text" spellcheck="false"></textarea>
+    <div class="row"><button class="primary" id="sheet-copy">复制</button><button id="sheet-apply" hidden>恢复进度</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// [unit, title, tip, [[中文, "英文参考|可接受的另一种说法"], ...]]
+const U = [
+[1,"am/is/are","主语 + am/is/are + 形容词/名词。I am, he/she/it is, we/you/they are；否定加 not。",[
+["我很累，但我不饿。","I'm tired, but I'm not hungry."],
+["我哥哥怕狗。","My brother is afraid of dogs."],
+["今天天气晴朗，但不暖和。","It's sunny today, but it isn't warm.|It's sunny today, but it's not warm."],
+["那些人不是英国人，他们是澳大利亚人。","Those people aren't English. They're Australian.|Those people aren't British. They're Australian."],
+["你的钥匙在桌子上。","Your keys are on the table.|Your key is on the table."],
+["现在十点了，你又迟到了。","It's ten o'clock. You're late again."]]],
+[2,"am/is/are（疑问句）","疑问句把 am/is/are 放到主语前：Is your mother at home? 特殊疑问词放最前。",[
+["你妈妈在家吗？","Is your mother at home?|Is your mother home?"],
+["你从哪里来？","Where are you from?|Where do you come from?"],
+["你的车是什么颜色的？","What colour is your car?"],
+["这些明信片多少钱？","How much are these postcards?"],
+["你为什么迟到？","Why are you late?"],
+["你饿吗？——不饿，但我渴。","Are you hungry? — No, I'm not, but I'm thirsty."]]],
+[3,"I am doing（现在进行时）","am/is/are + -ing：说话这一刻正在发生的事。",[
+["请安静，我在工作。","Please be quiet. I'm working."],
+["看！正在下雨。","Look! It's raining."],
+["孩子们正在公园里踢足球。","The children are playing football in the park."],
+["她戴着一顶帽子。","She's wearing a hat."],
+["你可以把电视关掉，我没在看。","You can turn off the television. I'm not watching it.|You can turn the television off. I'm not watching it."],
+["我们现在正在吃晚饭。","We're having dinner now.|We're eating dinner now."]]],
+[4,"are you doing?（现在进行时的疑问式）","疑问：Am/Is/Are + 主语 + -ing？Where are you going?",[
+["你在做什么？","What are you doing?"],
+["在下雨吗？","Is it raining?"],
+["你为什么穿着外套？天不冷。","Why are you wearing a coat? It isn't cold.|Why are you wearing a coat? It's not cold."],
+["你在等谁？","Who are you waiting for?"],
+["保罗今天在上班吗？","Is Paul working today?"],
+["你的朋友们要去哪儿？","Where are your friends going?"]]],
+[5,"I do/work/like 等（一般现在时）","一般事实、习惯。he/she/it 后动词加 -s/-es；always/never/often 放在动词前。",[
+["我哥哥在银行工作。","My brother works in a bank."],
+["冬天这里经常下雨。","It often rains here in winter.|It rains a lot here in winter.|It rains a lot in winter here."],
+["她总是很早到单位。","She always gets to work early.|She always arrives at work early."],
+["我从来不吃早餐。","I never eat breakfast.|I never have breakfast."],
+["地球绕着太阳转。","The earth goes round the sun.|The earth goes around the sun.|The earth moves around the sun."],
+["蒂姆每天早上洗澡。","Tim has a shower every morning.|Tim takes a shower every morning."]]],
+[6,"I don't ...（一般现在时的否定式）","don't/doesn't + 动词原形。He doesn't like（不是 doesn't likes）。",[
+["我喝咖啡，但不喝茶。","I drink coffee, but I don't drink tea."],
+["他不喜欢他的工作。","He doesn't like his job."],
+["这里不常下雨。","It doesn't rain very often here.|It doesn't often rain here.|It doesn't rain here very often."],
+["我们不太常看电视。","We don't watch television very often.|We don't often watch television."],
+["萨拉说西班牙语，但不说意大利语。","Sarah speaks Spanish, but she doesn't speak Italian."],
+["我的车不怎么耗油。","My car doesn't use much petrol.|My car doesn't use much gas."]]],
+[7,"Do you ...?（一般现在时的疑问式）","Do/Does + 主语 + 动词原形？What does this word mean?",[
+["你周日工作吗？","Do you work on Sundays?|Do you work on Sunday?"],
+["你父母住在哪里？","Where do your parents live?"],
+["这个词是什么意思？","What does this word mean?"],
+["你多久洗一次头？","How often do you wash your hair?"],
+["你是做什么工作的？","What do you do?|What's your job?"],
+["你哥哥说英语吗？","Does your brother speak English?"]]],
+[8,"I am doing 与 I do 比较","现在进行时 = 此刻正在做；一般现在时 = 习惯/事实。like/want/know/understand/mean 等不用进行时。",[
+["杰克现在在看电视，他没在弹吉他。","Jack is watching television now. He isn't playing the guitar.|Jack is watching television now. He's not playing the guitar."],
+["我每天早上八点开始工作。","I start work at 8 o'clock every morning."],
+["你周末通常做什么？","What do you usually do at weekends?|What do you usually do at the weekend?|What do you usually do on weekends?"],
+["我不明白。你是什么意思？","I don't understand. What do you mean?"],
+["我累了，我想回家。","I'm tired. I want to go home."],
+["听！有人在唱歌。","Listen! Somebody is singing.|Listen! Someone is singing."]]],
+[9,"I have ... / I've got ...","have = have got（英式常用）。否定：haven't got / don't have；疑问：Have you got...? / Do you have...?",[
+["我有一辆摩托车，但没有汽车。","I've got a motorbike, but I haven't got a car.|I have a motorbike, but I don't have a car."],
+["蒂姆有两个姐妹。","Tim has two sisters.|Tim has got two sisters."],
+["你有相机吗？","Have you got a camera?|Do you have a camera?"],
+["这房子不错，但没有花园。","It's a nice house, but it hasn't got a garden.|It's a nice house, but it doesn't have a garden."],
+["萨拉不舒服，她头疼。","Sarah isn't feeling well. She has a headache.|Sarah isn't feeling well. She's got a headache.|Sarah doesn't feel well. She has a headache."],
+["他们没有孩子。","They haven't got any children.|They don't have any children.|They have no children."]]],
+[10,"was/were","am/is → was，are → were。疑问把 was/were 提前。",[
+["昨晚我很累。","I was tired last night."],
+["你今天早上为什么迟到？","Why were you late this morning?"],
+["旅行之后我们很饿，但不累。","We were hungry after the journey, but we weren't tired.|We were hungry after the trip, but we weren't tired."],
+["你度假时天气好吗？","Was the weather nice when you were on holiday?|Was the weather good when you were on holiday?"],
+["我小时候怕狗。","When I was a child, I was afraid of dogs.|I was afraid of dogs when I was a child."],
+["昨天下午三点你在哪儿？","Where were you at three o'clock yesterday afternoon?|Where were you at 3 o'clock yesterday afternoon?"]]],
+[11,"worked/got/went 等（一般过去时）","规则动词加 -ed；不规则动词要背：go→went, get→got, take→took…",[
+["今天早上我九点起床。","I got up at nine o'clock this morning.|This morning I got up at nine o'clock."],
+["昨天整个上午都在下雨。","It rained all morning yesterday.|Yesterday it rained all morning."],
+["我们昨晚在聚会上跳了很多舞。","We danced a lot at the party last night."],
+["卡罗琳上周去了三次电影院。","Caroline went to the cinema three times last week."],
+["他走进房间，脱下外套，坐了下来。","He came into the room, took off his coat and sat down.|He came into the room, took his coat off and sat down."],
+["我们昨天做了很多工作。","We did a lot of work yesterday."]]],
+[12,"I didn't ... Did you ...?","didn't / Did ...? + 动词原形（不是 didn't went）。",[
+["我昨天没看电视。","I didn't watch television yesterday."],
+["你昨晚做了什么？","What did you do last night?"],
+["事故是怎么发生的？","How did the accident happen?"],
+["我们去看了电影，但不喜欢那部片子。","We went to the cinema, but we didn't enjoy the film.|We went to the cinema, but we didn't like the film."],
+["你周日见到乔了吗？","Did you see Joe on Sunday?"],
+["她没有时间，所以没去购物。","She didn't have time, so she didn't go shopping.|She didn't have time, so she didn't do the shopping."]]],
+[13,"I was doing（过去进行时）","was/were + -ing：过去某一时刻正在进行的动作。",[
+["昨天十一点半你在做什么？","What were you doing at 11.30 yesterday?|What were you doing at half past eleven yesterday?"],
+["当时在下雨，所以我们没出去。","It was raining, so we didn't go out."],
+["2001年我们住在加拿大。","In 2001 we were living in Canada.|We were living in Canada in 2001.|We lived in Canada in 2001."],
+["我当时没在听，所以不知道他说了什么。","I wasn't listening, so I don't know what he said."],
+["阳光照耀着，鸟儿在歌唱。","The sun was shining and the birds were singing."],
+["今天她穿裙子，但昨天她穿的是裤子。","Today she's wearing a skirt, but yesterday she was wearing trousers."]]],
+[14,"I was doing 与 I did 比较","长动作用过去进行时，打断它的短动作用一般过去时：I was reading when the phone rang.",[
+["电话响时，杰克正在看书。","Jack was reading a book when the phone rang.|When the phone rang, Jack was reading a book."],
+["我起床时没在下雨。","It wasn't raining when I got up."],
+["凯莉看书时睡着了。","Kelly fell asleep while she was reading."],
+["露西在粉刷房间时摔断了手臂。","Lucy broke her arm while she was painting her room.|Lucy broke her arm when she was painting her room."],
+["我给你打电话时，你在看电视吗？","Were you watching television when I phoned you?|Were you watching television when I called you?"],
+["我今天早上看到露西和史蒂夫，他们正在公交车站等车。","I saw Lucy and Steve this morning. They were waiting at the bus stop."]]],
+[15,"I have done（现在完成时 1）","have/has + 过去分词：过去的动作对现在有影响（钥匙丢了→现在找不到）。",[
+["我把护照弄丢了。（现在找不到）","I've lost my passport."],
+["丽贝卡去睡觉了。","Rebecca has gone to bed."],
+["我们买了一辆新车。","We've bought a new car."],
+["明天是雷切尔的生日，我还没给她买礼物。","It's Rachel's birthday tomorrow and I haven't bought her a present.|It's Rachel's birthday tomorrow and I haven't bought a present for her."],
+["你看完这份报纸了吗？","Have you finished with this newspaper?|Have you finished this newspaper?"],
+["他把鞋擦干净了。","He has cleaned his shoes."]]],
+[16,"just / already / yet（现在完成时 2）","just 刚刚；already 已经（比预期早）；yet 用于否定和疑问，放句尾。",[
+["他们刚到。","They've just arrived."],
+["我刚吃过晚饭。","I've just had dinner.|I've just eaten dinner."],
+["现在才九点，安娜已经睡了。","It's only nine o'clock and Anna has already gone to bed."],
+["我们已经见过面了。","We've already met."],
+["电影还没开始。","The film hasn't started yet."],
+["你告诉詹姆斯了吗？","Have you told James yet?"]]],
+[17,"Have you ever ...?（现在完成时 3）","从过去到现在的经历：ever 用于疑问，never 从不；been to = 去过（已回来）。",[
+["你去过日本吗？","Have you ever been to Japan?|Have you been to Japan?"],
+["我去过加拿大，但没去过美国。","I've been to Canada, but I haven't been to the United States.|I've been to Canada, but I haven't been to the USA."],
+["我从来没骑过马。","I've never ridden a horse."],
+["我以前见过那个女人，但想不起在哪儿了。","I've seen that woman before, but I can't remember where."],
+["这本书我读过两次。","I've read this book twice."],
+["我妹妹从没坐过飞机。","My sister has never travelled by plane.|My sister has never flown."]]],
+[18,"How long have you ...?（现在完成时 4）","持续到现在用现在完成时（不是 How long are you married?）；动作仍在进行用 have been + -ing。",[
+["简从周一起就在爱尔兰了。","Jane has been in Ireland since Monday."],
+["你们结婚多久了？","How long have you been married?"],
+["我认识丽莎很长时间了。","I've known Lisa for a long time."],
+["你学德语多久了？","How long have you been learning German?"],
+["下了一整天雨了。","It's been raining all day.|It has rained all day."],
+["她一辈子都住在伦敦。","She has lived in London all her life.|She has been living in London all her life."]]],
+[19,"for / since / ago","for + 一段时间；since + 起点；ago 与一般过去时连用。",[
+["理查德在加拿大待了六个月了。","Richard has been in Canada for six months."],
+["我们从九点开始一直在等。","We've been waiting since nine o'clock.|We've been waiting since 9 o'clock."],
+["苏珊三周前开始了新工作。","Susan started her new job three weeks ago."],
+["汤姆十分钟前出去了。","Tom went out ten minutes ago."],
+["我十岁起就住在伦敦。","I've lived in London since I was ten years old.|I've lived in London since I was ten.|I've been living in London since I was ten."],
+["一百年前的生活很不一样。","Life was very different a hundred years ago.|Life was very different 100 years ago."]]],
+[20,"I have done 与 I did 比较","有明确过去时间（yesterday, last year, ago, When...?）用一般过去时，不用现在完成时。",[
+["我昨天见到了保拉。","I saw Paula yesterday."],
+["我们去年没有度假。","We didn't have a holiday last year.|We didn't go on holiday last year."],
+["你什么时候买的电脑？","When did you buy your computer?|When did you buy the computer?"],
+["本回家了。（现在不在这儿）","Ben has gone home."],
+["本十分钟前回家了。","Ben went home ten minutes ago."],
+["我们在新加坡住了六年了。（现在还住）","We've lived in Singapore for six years.|We've been living in Singapore for six years."]]],
+[21,"is done / was done（被动语态 1）","am/is/are 或 was/were + 过去分词；by + 动作执行者。出生：I was born。",[
+["这间办公室每天都有人打扫。","The office is cleaned every day.|This office is cleaned every day."],
+["黄油是由牛奶制成的。","Butter is made from milk."],
+["这座房子是一百年前建的。","This house was built 100 years ago.|This house was built a hundred years ago."],
+["我出生于1989年。","I was born in 1989."],
+["电话是什么时候发明的？","When was the telephone invented?"],
+["几天前我被一条狗咬了。","I was bitten by a dog a few days ago.|A few days ago I was bitten by a dog."]]],
+[22,"is being done / has been done（被动语态 2）","正在被做：is/are being + 过去分词；已经被做：has/have been + 过去分词。",[
+["我的车正在修理。","My car is being repaired."],
+["公园对面正在建一些新房子。","Some new houses are being built opposite the park."],
+["我的钥匙被偷了。","My keys have been stolen.|My key has been stolen."],
+["我没被邀请。","I haven't been invited."],
+["这件衬衫洗过了吗？","Has this shirt been washed?"],
+["门已经刷过漆了。","The door has been painted."]]],
+[23,"现在时与过去时中的 be/have/do","be + -ing / be + 过去分词 / have + 过去分词 / do + 动词原形：先判断用哪个助动词。",[
+["保罗和妮可去哪儿了？","Where have Paul and Nicole gone?"],
+["西尔维娅一个人住吗？","Does Silvia live alone?|Does Silvia live on her own?"],
+["她到的时候我正在工作。","I was working when she arrived.|When she arrived, I was working."],
+["窗户是怎么被打破的？","How was the window broken?"],
+["凯特没去过加拿大。","Kate hasn't been to Canada.|Kate has never been to Canada."],
+["克里斯不常出去。","Chris doesn't go out very often.|Chris doesn't often go out."]]],
+[24,"规则动词与不规则动词","不规则动词的过去式和过去分词要分开记：break-broke-broken, know-knew-known。",[
+["我昨天做了一个蛋糕。","I made a cake yesterday."],
+["有人打破了这扇窗。（现在完成时）","Somebody has broken this window.|Someone has broken this window."],
+["这扇窗是昨晚被打破的。","This window was broken last night."],
+["我昨晚睡得很好。","I slept very well last night.|I slept well last night."],
+["我把包丢了，你看到了吗？","I've lost my bag. Have you seen it?"],
+["安娜十八岁时学会了开车。","Anna learned to drive when she was 18.|Anna learnt to drive when she was 18."]]],
+[25,"What are you doing tomorrow?","现在进行时表示已安排好的将来；时刻表（火车、电影）用一般现在时。",[
+["安德鲁明天要打网球。","Andrew is playing tennis tomorrow."],
+["我下周不上班。","I'm not working next week."],
+["你明晚做什么？","What are you doing tomorrow evening?|What are you doing tomorrow night?"],
+["我们下周末要开个派对。","We're having a party next weekend."],
+["火车七点半到。","The train arrives at 7.30.|The train arrives at half past seven."],
+["电影几点结束？","What time does the film finish?|What time does the film end?"]]],
+[26,"I'm going to ...","be going to：已决定的打算；或从现在迹象判断一定会发生。",[
+["我今晚要看电视。","I'm going to watch TV this evening.|I'm going to watch TV tonight."],
+["萨拉打算卖掉她的车。","Sarah is going to sell her car."],
+["下周的婚礼你打算穿什么？","What are you going to wear to the wedding next week?"],
+["我今天早上不打算吃早饭，我不饿。","I'm not going to have breakfast this morning. I'm not hungry."],
+["看天空！要下雨了。","Look at the sky! It's going to rain."],
+["已经九点了，我要迟到了。","It's nine o'clock. I'm going to be late.|It's already nine o'clock. I'm going to be late."]]],
+[27,"will/shall (1)","will + 动词原形：将来会怎样；常用 I think ... will / I don't think ... will。",[
+["我今晚会在家。","I'll be at home this evening.|I'll be at home tonight.|I'll be home tonight."],
+["我想凯莉会通过考试。","I think Kelly will pass the exam."],
+["我觉得今天下午不会下雨。","I don't think it will rain this afternoon."],
+["睡前别喝咖啡，你会睡不着的。","Don't drink coffee before you go to bed. You won't sleep."],
+["你觉得考试会难吗？","Do you think the exam will be difficult?|Do you think the exam will be hard?"],
+["明天我不会在这儿。","I won't be here tomorrow."]]],
+[28,"will/shall (2)","I'll ... 当场决定/主动提议；Shall I/we ...? 询问对方意见。",[
+["我来帮你拿。","I'll carry it for you."],
+["我明天给你打电话，好吗？","I'll phone you tomorrow, OK?|I'll call you tomorrow, OK?"],
+["我累了，我想今晚早点睡。","I'm tired. I think I'll go to bed early tonight."],
+["房间里很热，要我开窗吗？","It's very warm in this room. Shall I open the window?|It's hot in this room. Shall I open the window?"],
+["天气不错，我们去散步好吗？","It's a nice day. Shall we go for a walk?"],
+["我们几点见面？","What time shall we meet?"]]],
+[29,"might / may","might/may + 动词原形 = 可能；否定 might not。May I ...? 礼貌请求。",[
+["我今晚可能去看电影，但不确定。","I might go to the cinema this evening, but I'm not sure.|I may go to the cinema this evening, but I'm not sure."],
+["带把伞吧，可能会下雨。","Take an umbrella with you. It might rain.|Take an umbrella. It might rain."],
+["苏可能不来参加聚会。","Sue might not come to the party.|Sue may not come to the party."],
+["我明天可能不去上班。","I might not go to work tomorrow.|I may not go to work tomorrow."],
+["我可以问个问题吗？","May I ask a question?|Can I ask a question?|Could I ask a question?"],
+["她今天下午可能会打电话来。","She might phone this afternoon.|She might call this afternoon.|She may phone this afternoon."]]],
+[30,"can / could","can 能/会；过去用 could/couldn't。Can/Could you ...? 请求；Can/Could I ...? 征求许可。",[
+["我会弹钢琴。","I can play the piano."],
+["萨拉会说意大利语，但不会说西班牙语。","Sarah can speak Italian, but she can't speak Spanish."],
+["我小时候能跑得很快。","When I was young, I could run very fast.|I could run very fast when I was young."],
+["我昨晚很累，但睡不着。","I was tired last night, but I couldn't sleep."],
+["请你开一下门好吗？","Could you open the door, please?|Can you open the door, please?"],
+["我能借你的伞吗？","Can I borrow your umbrella?|Could I borrow your umbrella?"]]],
+[31,"must / mustn't / don't need to","must 必须；过去用 had to；mustn't 千万不要；don't need to 不必。",[
+["我很饿，我得吃点东西。","I'm very hungry. I must eat something."],
+["昨晚我们不得不走回家，没有公交车了。","We had to walk home last night. There were no buses.|We had to walk home last night. There weren't any buses."],
+["我千万不能迟到。","I mustn't be late."],
+["你不必大喊，我听得见。","You don't need to shout. I can hear you.|You don't have to shout. I can hear you."],
+["我还不用走，我可以再待一会儿。","I don't need to go yet. I can stay a little longer.|I don't have to go yet. I can stay a little longer."],
+["你千万别碰这些画。","You mustn't touch the pictures.|You mustn't touch these pictures."]]],
+[32,"should","should = 这样做是好的/对的；I think ... should / I don't think ... should。",[
+["汤姆应该更努力学习。","Tom should study harder."],
+["你不应该看这么多电视。","You shouldn't watch TV so much.|You shouldn't watch so much TV."],
+["我觉得你应该去看医生。","I think you should go to the doctor.|I think you should see a doctor."],
+["我觉得我们还不该走，太早了。","I don't think we should go yet. It's too early.|I don't think we should leave yet. It's too early."],
+["你觉得我应该买这顶帽子吗？","Do you think I should buy this hat?"],
+["那是部好电影，你应该去看看。","It's a good film. You should go and see it.|It's a good film. You should see it."]]],
+[33,"I have to ...","have to 必须（客观要求）；疑问/否定用 do/does/did；don't have to 不必。",[
+["我明天上班会迟到，我得去看牙医。","I'll be late for work tomorrow. I have to go to the dentist."],
+["简七点上班，所以她得六点起床。","Jane starts work at seven o'clock, so she has to get up at six.|Jane starts work at 7, so she has to get up at 6."],
+["你明天几点得去看牙医？","What time do you have to go to the dentist tomorrow?"],
+["他们为什么不得不提早离开聚会？","Why did they have to leave the party early?"],
+["我明天不上班，所以不用早起。","I'm not working tomorrow, so I don't have to get up early."],
+["我们没等多久公交车就来了。（不必等很久）","We didn't have to wait long for the bus.|We didn't have to wait very long for the bus."]]],
+[34,"Would you like ...? I'd like ...","Would you like ...? 提供/邀请；I'd like = I want 的礼貌说法；Do you like ...? 是问喜好。",[
+["你想喝点咖啡吗？","Would you like some coffee?"],
+["你周日想和我们一起吃晚饭吗？","Would you like to have dinner with us on Sunday?"],
+["我渴了，我想喝点东西。","I'm thirsty. I'd like a drink.|I'm thirsty. I'd like something to drink."],
+["今晚你想做什么？","What would you like to do this evening?|What would you like to do tonight?"],
+["你喜欢喝茶吗？","Do you like tea?"],
+["我累了，今晚想待在家里。","I'm tired. I'd like to stay at home this evening.|I'm tired. I'd like to stay at home tonight."]]],
+[35,"Do this! Don't do that! Let's do this!","祈使句用动词原形开头；Don't ... 别；Let's ... 我们一起；Let's not ... 我们别。",[
+["过来看看这个！","Come here and look at this!"],
+["请等等我。","Please wait for me.|Wait for me, please."],
+["小心！别摔倒。","Be careful! Don't fall."],
+["准时到这儿，别迟到。","Be here on time. Don't be late."],
+["天气真好，我们出去吧。","It's a nice day. Let's go out."],
+["天冷，我们别出去了，待在家吧。","It's cold. Let's not go out. Let's stay at home.|It's cold. Don't let's go out. Let's stay at home."]]],
+[36,"I used to ...","used to + 动词原形：过去常常（现在不了）；否定 didn't use to，疑问 did you use to?",[
+["戴夫以前在工厂工作，现在在超市工作。","Dave used to work in a factory. Now he works in a supermarket."],
+["我小时候喜欢巧克力。","When I was a child, I used to like chocolate.|I used to like chocolate when I was a child."],
+["莉兹以前留长发。","Liz used to have long hair."],
+["我以前读很多书，但现在读得不多了。","I used to read a lot of books, but I don't read much these days.|I used to read a lot of books, but I don't read much now."],
+["你来这里之前住在哪儿？","Where did you use to live before you came here?|Where did you live before you came here?"],
+["我以前不喜欢西红柿。","I didn't use to like tomatoes.|I never used to like tomatoes."]]],
+[37,"there is / there are","某处有某物：There is + 单数 / There are + 复数。there is 与 it is 不同。",[
+["花园里有一棵大树。","There's a big tree in the garden."],
+["请问，这附近有宾馆吗？","Excuse me, is there a hotel near here?"],
+["这条路上事故很多。","There are a lot of accidents on this road."],
+["我们不能去滑雪，没有雪。","We can't go skiing. There isn't any snow.|We can't go skiing. There's no snow."],
+["一支足球队有多少名队员？","How many players are there in a football team?"],
+["桌上有本书。","There's a book on the table."]]],
+[38,"there was/were, there has/have been, there will be","过去：there was/were；完成：there has/have been；将来：there will be。",[
+["昨晚电视上有部好电影。","There was a good film on TV last night."],
+["那家酒店（当时）有五百个房间。","There were 500 rooms in the hotel.|There were five hundred rooms in the hotel."],
+["我回家时很饿，但没有任何吃的。","I was hungry when I got home, but there wasn't anything to eat.|I was hungry when I got home, but there was nothing to eat."],
+["看！出车祸了。","Look! There's been an accident."],
+["这条路很危险，已经发生过很多起事故。","This road is very dangerous. There have been many accidents.|This road is very dangerous. There have been a lot of accidents."],
+["你觉得周六的聚会会有很多人吗？","Do you think there will be a lot of people at the party on Saturday?|Do you think there will be many people at the party on Saturday?"]]],
+[39,"It ...","it 表示时间、日期、距离、天气；It's nice/easy/difficult to ...。it 不能省略。",[
+["现在十点半。","It's half past ten.|It's ten thirty.|It's 10.30."],
+["从我家到市中心有三公里。","It's three kilometres from my house to the city centre.|It's 3 kilometres from my house to the city centre."],
+["从这里到车站远吗？","Is it far from here to the station?"],
+["又在下雨了。","It's raining again."],
+["很高兴再次见到你。","It's nice to see you again."],
+["找到你家可不容易。","It wasn't easy to find your house."]]],
+[40,"I am, I don't 等","省略重复部分，只留助动词：She isn't tired, but he is. 句尾不用缩写 he's。",[
+["她不累，但他累。","She isn't tired, but he is."],
+["我没有车，但我姐姐有。","I haven't got a car, but my sister has.|I don't have a car, but my sister does."],
+["我不喜欢热天，但苏喜欢。","I don't like hot weather, but Sue does."],
+["你觉得简今晚会打电话吗？——她可能会。","Do you think Jane will phone this evening? — She might.|Do you think Jane will call this evening? — She might."],
+["苏工作很努力，但我不。","Sue works hard, but I don't."],
+["我喜欢那部电影，但克里斯不喜欢。","I enjoyed the film, but Chris didn't.|I liked the film, but Chris didn't."]]],
+[41,"have you? are you? don't you? 等","回应式问句 Am I? / Can't he? 表惊讶；附加疑问句：前肯后否，前否后肯。",[
+["你迟到了。——是吗？对不起。","You're late. — Am I? I'm sorry."],
+["比尔不会开车。——是吗？我不知道。","Bill can't drive. — Can't he? I didn't know that."],
+["今天天气真好，不是吗？","It's a beautiful day, isn't it?|It's a nice day, isn't it?"],
+["萨莉住在伦敦，对吧？","Sally lives in London, doesn't she?"],
+["那不是你的车，对吧？","That isn't your car, is it?"],
+["你不会迟到吧？","You won't be late, will you?"]]],
+[42,"too/either, so am I / neither do I","肯定句后用 too / So + 助动词 + 主语；否定句后用 either / Neither + 助动词 + 主语。",[
+["我很开心。——我也是。","I'm happy. — So am I.|I'm happy. — I'm happy too.|I'm happy. — Me too."],
+["我不会做饭，他也不会。","I can't cook. He can't cook either.|I can't cook, and he can't either."],
+["我在银行工作。——我也是。","I work in a bank. — So do I."],
+["我没有钥匙。——我也没有。","I haven't got a key. — Neither have I.|I don't have a key. — Neither do I.|I haven't got a key. — Nor have I."],
+["我想去澳大利亚。——我也想。","I'd like to go to Australia. — So would I."],
+["比尔不看电视，也不看报纸。","Bill doesn't watch TV. He doesn't read newspapers either."]]],
+[43,"isn't, haven't, don't 等（否定句）","在助动词后加 not；没有助动词就用 don't/doesn't/didn't。",[
+["你不应该工作这么努力。","You shouldn't work so hard."],
+["我昨晚睡不着。","I couldn't sleep last night."],
+["我们明天不会在这儿。","We won't be here tomorrow."],
+["丽兹不弹吉他。","Liz doesn't play the guitar."],
+["别等我。","Don't wait for me."],
+["我没照你说的做。","I didn't do what you said."]]],
+[44,"is it ...? have you ...? do they ...?（疑问句 1）","疑问句：助动词放在主语前；没有助动词就加 do/does/did。Why isn't ...? / Why don't ...?",[
+["大卫去哪儿了？","Where has David gone?"],
+["那些人在等什么吗？","Are those people waiting for something?"],
+["你多久看一次电视？","How often do you watch television?"],
+["她几点起床的？","What time did she get up?"],
+["你昨晚为什么没给我打电话？","Why didn't you phone me last night?|Why didn't you call me last night?"],
+["保拉明天为什么不能来开会？","Why can't Paula come to the meeting tomorrow?"]]],
+[45,"Who saw you? Who did you see?（疑问句 2）","who/what 做主语时不用 do：Who lives here? 做宾语时要用：Who did you see?",[
+["谁住在这座房子里？","Who lives in this house?"],
+["发生了什么事？","What happened?"],
+["你昨天见了谁？","Who did you meet yesterday?|Who did you see yesterday?"],
+["保罗说了什么？","What did Paul say?"],
+["谁拿着我的钥匙？","Who has got my key?|Who has my key?"],
+["是什么把你吵醒的？","What woke you up?"]]],
+[46,"Who is she talking to? What is it like?（疑问句 3）","介词常放在句尾：Who are you talking to? What's it like? = 它怎么样？",[
+["她在和谁说话？","Who is she talking to?|Who is she speaking to?"],
+["他害怕什么？","What is he afraid of?"],
+["这些书是谁的？","Who do these books belong to?|Whose books are these?"],
+["你想谈什么？","What do you want to talk about?"],
+["你的新老师怎么样？","What's your new teacher like?"],
+["你度假时天气怎么样？","What was the weather like when you were on holiday?|What was the weather like on your holiday?"]]],
+[47,"What ...? Which ...? How ...?（疑问句 4）","what 范围广；which 在少数选项中选；比较人用 who；how + 形容词/副词。",[
+["你想找什么样的工作？","What kind of job do you want?|What sort of job do you want?|What type of job do you want?"],
+["你坐的是哪班火车，9点50的还是10点30的？","Which train did you catch, the 9.50 or the 10.30?|Which train did you take, the 9.50 or the 10.30?"],
+["哪个更大，加拿大还是澳大利亚？","Which is bigger, Canada or Australia?"],
+["乔和加里谁更高？","Who is taller, Joe or Gary?"],
+["你多高？","How tall are you?"],
+["你多久用一次车？","How often do you use your car?"]]],
+[48,"How long does it take ...?","It takes (sb) + 时间 + to do：做某事花多长时间。",[
+["从伦敦坐火车到曼彻斯特要多长时间？","How long does it take by train from London to Manchester?|How long does it take from London to Manchester by train?"],
+["坐火车要两个小时。","It takes two hours by train."],
+["学一门语言要花很长时间。","It takes a long time to learn a language."],
+["做煎蛋卷不用很久。","It doesn't take long to cook an omelette.|It doesn't take long to make an omelette."],
+["我花了三天读完那本书。","It took me three days to read the book."],
+["汤姆早上去上班要二十分钟。","It takes Tom 20 minutes to get to work in the morning.|It takes Tom twenty minutes to get to work in the morning."]]],
+[49,"Do you know where ...? I don't know what ...","间接疑问用陈述语序：Do you know where Paula is?（不是 where is Paula）；一般疑问用 if/whether。",[
+["你知道保拉在哪儿吗？","Do you know where Paula is?"],
+["我不知道现在几点。","I don't know what time it is."],
+["你能告诉我这个相机多少钱吗？","Can you tell me how much this camera is?|Can you tell me how much this camera costs?"],
+["我不记得她为什么回家了。","I don't remember why she went home.|I can't remember why she went home."],
+["你知道他们有没有车吗？","Do you know if they've got a car?|Do you know whether they've got a car?|Do you know if they have a car?"],
+["你知道他住在哪儿吗？","Do you know where he lives?"]]],
+[50,"She said that ... He told me that ...","间接引语时态往前推：am→was, can→could, will→would, have done→had done。say sth / tell sb sth。",[
+["他说他累了。","He said he was tired.|He said that he was tired."],
+["他告诉我他累了。","He told me he was tired.|He told me that he was tired."],
+["她说她不能来参加聚会。","She said she couldn't come to the party.|She said that she couldn't come to the party.|She said she couldn't go to the party."],
+["他们说他们会晚回家。","They said they would be home late.|They said that they would be home late."],
+["她对你说了什么？","What did she say to you?|What did she tell you?"],
+["保罗说他丢了手表。","Paul said he had lost his watch.|Paul said that he had lost his watch."]]],
+[51,"work/working go/going do/doing","情态动词 / do 后用原形；want/have/going 后用 to + 原形；be 后用 -ing。",[
+["安娜很快就会到这里。","Anna will be here soon."],
+["我现在得走了。","I have to go now.|I must go now."],
+["你想出去吗？","Do you want to go out?"],
+["我想和你谈谈。","I'd like to talk to you.|I'd like to speak to you."],
+["汤姆今天不上班。（现在进行时）","Tom isn't working today."],
+["他们不想和我们一起来。","They don't want to come with us."]]],
+[52,"I want to do 与 I enjoy doing 比较","want/decide/hope/learn + to do；enjoy/mind/stop/finish/suggest + doing；like/love/start 两者皆可。",[
+["你今晚想做什么？","What do you want to do this evening?|What do you want to do tonight?"],
+["蒂娜决定卖掉她的车。","Tina has decided to sell her car.|Tina decided to sell her car."],
+["我喜欢跳舞。（用 enjoy）","I enjoy dancing."],
+["雨停了吗？","Has it stopped raining?"],
+["你喜欢早起吗？","Do you like getting up early?|Do you like to get up early?"],
+["我很想去澳大利亚。","I'd love to go to Australia."]]],
+[53,"I want you to ... I told you to ...","want/ask/tell/advise + sb + to do；make/let + sb + 动词原形（无 to）。",[
+["我希望你开心。","I want you to be happy."],
+["你要我借你一些钱吗？","Do you want me to lend you some money?|Would you like me to lend you some money?"],
+["我告诉过你要小心。","I told you to be careful."],
+["保罗叫苏别等他。","Paul told Sue not to wait for him."],
+["他很搞笑，总能让我笑。","He's very funny. He makes me laugh."],
+["苏让我用她的电脑。","Sue let me use her computer."]]],
+[54,"I went to the shop to ...","to + 动词 表示目的；for + 名词；wait for sb to do。",[
+["保拉去商店买报纸了。","Paula went to the shop to get a newspaper.|Paula went to the shop to buy a newspaper."],
+["我们需要一些钱买食物。","We need some money to buy food."],
+["我没有时间看电视。","I haven't got time to watch television.|I don't have time to watch television."],
+["他们要去巴西度假。","They're going to Brazil for a holiday.|They're going to Brazil on holiday."],
+["我还不能出去，我在等约翰的电话。","I can't go out yet. I'm waiting for John to phone.|I can't go out yet. I'm waiting for John to call."],
+["苏打开电视看新闻。","Sue turned on the television to watch the news.|Sue turned the television on to watch the news."]]],
+[55,"go to ... go on ... go for ... go -ing","go to + 地点；go home（无 to）；go on holiday；go for a walk；go swimming/shopping。",[
+["我下周去中国。","I'm going to China next week."],
+["我累了，我要回家了。","I'm tired. I'm going home."],
+["我们下周去度假。","We're going on holiday next week."],
+["艾玛去散步了。","Emma has gone for a walk."],
+["你今天下午去购物吗？","Are you going shopping this afternoon?"],
+["天气很好，我们去游泳吧。","It's a nice day. Let's go swimming.|It's a nice day. Let's go for a swim."]]],
+[56,"get","get + 名词 = 收到/买到/找到；get + 形容词 = 变得；get to = 到达；get home；get in/out/on/off。",[
+["你收到我的明信片了吗？","Did you get my postcard?"],
+["快喝咖啡，要凉了。","Drink your coffee. It's getting cold."],
+["我们没有地图，所以迷路了。","We didn't have a map, so we got lost."],
+["你昨晚几点到家的？","What time did you get home last night?"],
+["我通常八点半之前到单位。","I usually get to work before 8.30.|I usually get to work before half past eight."],
+["凯特上了车开走了。","Kate got in the car and drove away.|Kate got into the car and drove away.|Kate got in the car and drove off."]]],
+[57,"do 与 make 比较","do 泛指做事（do homework/housework/a favour）；make 制造（make coffee/a mistake/an appointment/a noise）。",[
+["你今晚做什么？","What are you doing this evening?|What are you doing tonight?"],
+["我犯了个错误。","I made a mistake.|I've made a mistake."],
+["我讨厌做家务。","I hate doing housework."],
+["她在煮咖啡。","She's making coffee."],
+["我需要预约看医生。","I need to make an appointment to see the doctor.|I need to make an appointment with the doctor."],
+["你能帮我个忙吗？","Can you do me a favour?|Could you do me a favour?"]]],
+[58,"have","have breakfast/a shower/a good time/a look 中的 have 不能换成 have got，可用进行时。",[
+["我每天早上洗澡。","I have a shower every morning.|I take a shower every morning."],
+["她在吃午饭。","She's having lunch."],
+["祝你玩得开心！","Have a nice time!|Have a good time!|Have fun!"],
+["你在东京玩得开心吗？","Did you have a good time in Tokyo?|Did you have a nice time in Tokyo?"],
+["我能看看你的报纸吗？","Can I have a look at your newspaper?|Could I have a look at your newspaper?"],
+["我第一次见到苏的时候，她是短发。","When I first met Sue, she had short hair."]]],
+[59,"I/me he/him they/them 等","主格做主语，宾格做宾语或放在介词后：for me, with us。give it to me。",[
+["我不要这本书了，你可以拿去。","I don't want this book. You can have it."],
+["她从不喝牛奶，她不喜欢。","She never drinks milk. She doesn't like it."],
+["这封信不是给我的，是给你的。","This letter isn't for me. It's for you."],
+["你为什么看着她？","Why are you looking at her?"],
+["我们要去看电影，你想和我们一起去吗？","We're going to the cinema. Do you want to come with us?"],
+["我想要那本书，请把它给我。","I want that book. Please give it to me."]]],
+[60,"my/his/their 等","形容词性物主代词 + 名词。its（它的）≠ it's（它是）。",[
+["他们和父母住在一起。","They live with their parents."],
+["你喜欢你的工作吗？","Do you like your job?"],
+["她的车是蓝色的。","Her car is blue."],
+["牛津以它的大学而闻名。","Oxford is famous for its university."],
+["我们邀请了所有朋友。","We invited all our friends.|We've invited all our friends."],
+["他哥哥在伦敦工作。","His brother works in London."]]],
+[61,"Whose is this? It's mine/yours/hers 等","mine/yours/hers/ours/theirs 后不跟名词；a friend of mine；Whose ...?",[
+["这本书是你的还是我的？","Is this book yours or mine?"],
+["我没带伞，所以海伦把她的给了我。","I didn't have an umbrella, so Helen gave me hers."],
+["那是他们的问题，不是我们的。","It's their problem, not ours."],
+["我出去见我的一个朋友。","I went out to meet a friend of mine."],
+["这是谁的钱？","Whose money is this?|Whose is this money?"],
+["这些是谁的鞋？——是约翰的。","Whose shoes are these? — They're John's."]]],
+[62,"I/me/my/mine","四种形式综合：主格 I / 宾格 me / 形容词性 my + 名词 / 名词性 mine。",[
+["我认识他，但记不起他的名字。","I know him, but I can't remember his name."],
+["她很高兴，因为我们邀请她来我们家住。","She was pleased because we invited her to stay with us at our house.|She was very pleased because we invited her to stay at our house."],
+["那是我的笔，你能把它给我吗？","That's my pen. Can you give it to me?|That's my pen. Can you give it to me, please?"],
+["这不是我的伞，是你的。","This isn't my umbrella. It's yours."],
+["他们在公园里和他们的朋友玩。","They're playing with their friends in the park."],
+["我们给了他们我们的地址，他们也给了我们他们的。","We gave them our address, and they gave us theirs."]]],
+[63,"myself/yourself/themselves 等","主语和宾语是同一人时用反身代词；by myself = 独自；each other = 互相。",[
+["他用刀割伤了自己。","He cut himself with a knife."],
+["她从自行车上摔下来，但没伤到自己。","She fell off her bike, but she didn't hurt herself.|She fell off her bicycle, but she didn't hurt herself."],
+["我们玩得很开心。（用 enjoy）","We enjoyed ourselves."],
+["我独自去度假了。","I went on holiday by myself.|I went on holiday alone."],
+["凯特和海伦很了解彼此。","Kate and Helen know each other well."],
+["请随便吃。（对两个人以上说）","Please help yourselves."]]],
+[64,"-'s（Kate's camera / my brother's car 等）","人用 -'s（复数用 -s'）；物、地点用 the ... of ...。",[
+["我住在我姐姐家。","I stayed at my sister's house."],
+["你见过布莱克先生的妻子吗？","Have you met Mr Black's wife?"],
+["这是我父母的车。","This is my parents' car."],
+["看那栋楼的屋顶。","Look at the roof of that building."],
+["我们没看到电影的开头。","We didn't see the beginning of the film."],
+["马德里是西班牙的首都。","Madrid is the capital of Spain."]]],
+[65,"a/an ...","a/an + 单数可数名词；元音音素前用 an；职业前要加 a/an。",[
+["雷切尔在一家银行工作。","Rachel works in a bank."],
+["你想要一个苹果还是一根香蕉？","Do you want an apple or a banana?|Would you like an apple or a banana?"],
+["我能再要一杯咖啡吗？","Can I have another cup of coffee?|Could I have another cup of coffee?"],
+["足球是一项运动。","Football is a game.|Football is a sport."],
+["我是一名牙医。","I'm a dentist."],
+["你想当老师吗？","Would you like to be a teacher?|Do you want to be a teacher?"]]],
+[66,"train(s) bus(es)（单数与复数）","不规则复数：man-men, child-children, sheep-sheep；jeans/scissors 总是复数；people/police 用复数动词。",[
+["我需要一条新牛仔裤。","I need a new pair of jeans.|I need some new jeans."],
+["剪刀在哪儿？我需要它。","Where are the scissors? I need them."],
+["他们是很好的人。","They're very nice people.|They're nice people.|They're good people."],
+["很多人说英语。","A lot of people speak English.|Many people speak English."],
+["警方想和看到事故的人谈谈。","The police want to talk to anybody who saw the accident.|The police want to talk to anyone who saw the accident."],
+["田里有很多羊。","There are a lot of sheep in the field."]]],
+[67,"a bottle / some water（可数/不可数 1）","不可数名词（water, money, music）前不加 a/an，没有复数；可以说 a bottle of water。",[
+["没有钥匙我们进不了房子。","We can't get into the house without a key."],
+["我有一些钱。","I've got some money.|I have some money."],
+["钱不是一切。","Money isn't everything."],
+["我想要一瓶水。","I'd like a bottle of water."],
+["盒子里没有多少钱。","There isn't much money in the box."],
+["新车非常贵。","New cars are very expensive."]]],
+[68,"a cake / some cake / some cakes（可数/不可数 2）","advice, bread, furniture, information, news, weather, work 是不可数的，不能加 a 或 -s。",[
+["我需要一些建议。","I need some advice."],
+["我要去买些面包。","I'm going to buy some bread."],
+["我想要一些关于伦敦酒店的信息。","I'd like some information about hotels in London."],
+["我刚听到一个好消息。","I've just had some good news.|I've just heard some good news."],
+["今天天气很好。","It's nice weather today.|The weather is nice today."],
+["我找到了一份新工作。","I've got a new job.|I've found a new job."]]],
+[69,"a/an 与 the 比较","a/an = 许多中的一个；the = 双方都知道是哪一个。",[
+["我买了一件夹克和一件衬衫。夹克很便宜，但衬衫很贵。","I bought a jacket and a shirt. The jacket was cheap, but the shirt was expensive."],
+["巴黎是法国的首都。","Paris is the capital of France."],
+["汤姆在哪儿？——在厨房。","Where's Tom? — In the kitchen.|Where's Tom? — He's in the kitchen."],
+["关灯，关门。","Turn off the light and close the door.|Turn the light off and close the door."],
+["丽莎是她班上年纪最小的学生。","Lisa is the youngest student in her class."],
+["你住得离市中心远吗？","Do you live far from the city centre?|Do you live far from the centre?"]]],
+[70,"the ...","the same / the sun / the sky / the top / the end / play the piano；但 TV、三餐、next/last week 前不用 the。",[
+["我们住在同一条街上。","We live in the same street.|We live on the same street."],
+["天空是蓝色的，太阳在照耀。","The sky is blue and the sun is shining."],
+["我哥哥是军人，他在部队。","My brother is a soldier. He's in the army."],
+["把你的名字写在页面顶端。","Write your name at the top of the page."],
+["保拉在学弹钢琴。","Paula is learning to play the piano."],
+["你早餐吃了什么？","What did you have for breakfast?"]]],
+[71,"go to work, go home, go to the cinema","work/school/university/hospital/prison/bed/home 前不用 the；cinema/theatre/bank/station/doctor 前用 the。",[
+["我现在去上班了。","I'm going to work now."],
+["有些孩子不喜欢上学。","Some children don't like school."],
+["海伦中学毕业后想上大学。","Helen wants to go to university when she leaves school."],
+["杰克出了事故，他不得不住院。","Jack had an accident. He had to go to hospital.|Jack had an accident. He had to go to the hospital."],
+["我从不去剧院，但常去电影院。","I never go to the theatre, but I go to the cinema a lot.|I never go to the theatre, but I often go to the cinema."],
+["你不舒服，为什么不去看医生？","You're not well. Why don't you go to the doctor?|You aren't well. Why don't you go to the doctor?"]]],
+[72,"I like music, I hate exams","泛指时不用 the（music, exams, meat）；运动、语言、学科前不用 the；特指才用 the。",[
+["我喜欢音乐，尤其是古典音乐。","I like music, especially classical music.|I love music, especially classical music."],
+["我们不常吃肉。","We don't eat meat very often.|We don't often eat meat."],
+["没有水，生命就不可能存在。","Life is not possible without water.|Life isn't possible without water."],
+["我讨厌考试。","I hate exams."],
+["我最喜欢的运动是足球和滑雪。","My favourite sports are football and skiing."],
+["我喜欢这个花园，花很漂亮。","I love this garden. The flowers are beautiful.|I like this garden. The flowers are beautiful."]]],
+[73,"the ...（地名）","国家、城市、街道一般不用 the；the USA/the UK、复数地名、河海洋、多数酒店/博物馆用 the。",[
+["开罗是埃及的首都。","Cairo is the capital of Egypt."],
+["秘鲁在南美洲。","Peru is in South America."],
+["他们住在美国。","They live in the United States.|They live in the USA.|They live in the US."],
+["尼罗河是世界上最长的河。","The Nile is the longest river in the world."],
+["凯文住在牛顿街。","Kevin lives in Newton Street.|Kevin lives on Newton Street."],
+["我们参观了科学博物馆。","We visited the Science Museum.|We went to the Science Museum."]]],
+[74,"this/that/these/those","近 this/these，远 that/those；电话中 this is（我）/ is that（你）；介绍人用 this is。",[
+["你喜欢这幅画吗？","Do you like this picture?"],
+["那些人是谁？","Who are those people?"],
+["这些花是送你的。","These flowers are for you."],
+["对不起，我忘了给你打电话。——没关系。","I'm sorry I forgot to phone you. — That's all right.|I'm sorry I forgot to call you. — That's all right.|I'm sorry I forgot to phone you. — That's OK."],
+["（电话里）嗨，萨拉，我是大卫。","Hi Sarah, this is David.|Hello Sarah, this is David."],
+["（介绍）布赖恩，这是克里斯。","Brian, this is Chris."]]],
+[75,"one/ones","one = a ...（单数）；ones 代替复数：this one, the black one, some new ones。",[
+["我需要一支笔，你有吗？","I need a pen. Have you got one?|I need a pen. Do you have one?"],
+["这个杯子脏了，能给我一个干净的吗？","This cup is dirty. Can I have a clean one?"],
+["你的车是哪辆？这辆还是那辆？","Which car is yours? This one or that one?"],
+["我不喜欢黑色的外套，但我喜欢棕色的。","I don't like the black coat, but I like the brown one."],
+["我的鞋很旧了，我要买双新的。","My shoes are very old. I'm going to buy some new ones."],
+["你住的是哪家酒店？——车站对面那家。","Which hotel did you stay at? — The one opposite the station."]]],
+[76,"some 与 any 比较","肯定句用 some，否定和大多数疑问句用 any；提供/请求时用 some。something/anybody 同理。",[
+["冰箱里有些冰。","There's some ice in the fridge."],
+["冰箱里没有牛奶。","There isn't any milk in the fridge.|There's no milk in the fridge."],
+["你需要帮忙吗？","Do you need any help?"],
+["你能借我一些钱吗？","Can you lend me some money?|Could you lend me some money?"],
+["她说了些什么，但我没听懂。","She said something, but I didn't understand."],
+["苏在哪儿？有人见过她吗？","Where's Sue? Has anybody seen her?|Where's Sue? Has anyone seen her?"]]],
+[77,"not + any, no, none","no + 名词 = not any；none 单独使用，不带名词。不能双重否定。",[
+["停车场里没有车。","There are no cars in the car park.|There aren't any cars in the car park."],
+["我们没有咖啡了。","We've got no coffee.|We haven't got any coffee.|We don't have any coffee.|We have no coffee."],
+["你有多少钱？——一点也没有。","How much money have you got? — None.|How much money do you have? — None."],
+["一切顺利，没有出问题。","Everything was OK. There were no problems.|Everything was OK. There weren't any problems."],
+["你咖啡里没放糖。","There's no sugar in your coffee.|There isn't any sugar in your coffee."],
+["你见到谁了？——谁也没见到。","Who did you meet? — Nobody.|Who did you meet? — No-one.|Who did you see? — Nobody."]]],
+[78,"nobody/no-one/nothing","not + anybody/anything = nobody/nothing；nobody/nothing 可做主语放句首。",[
+["房间里没有人。","There's nobody in the room.|There isn't anybody in the room.|There's no-one in the room."],
+["我什么都不记得。","I can't remember anything.|I don't remember anything."],
+["她什么也没说。","She didn't say anything.|She said nothing."],
+["那座房子是空的，没人住在那儿。","The house is empty. Nobody lives there.|The house is empty. No-one lives there."],
+["什么也没发生。","Nothing happened."],
+["别告诉任何人。","Don't tell anybody.|Don't tell anyone."]]],
+[79,"somebody/anything/nowhere 等","some-/any-/no- + body/thing/where；something + 形容词；something to eat。",[
+["有人打破了窗户。","Somebody has broken the window.|Someone has broken the window.|Somebody broke the window."],
+["汤姆住在伦敦附近的某个地方。","Tom lives somewhere near London."],
+["你这个周末有什么安排吗？","Are you doing anything at the weekend?|Are you doing anything this weekend?"],
+["你假期去了什么有趣的地方吗？","Did you go anywhere interesting for your holidays?|Did you go anywhere interesting on holiday?"],
+["我饿了，我想吃点东西。","I'm hungry. I want something to eat."],
+["这个镇上没地方可去。","There's nowhere to go in this town."]]],
+[80,"every 与 all 比较","every + 单数名词 + 单数动词；every day 每天 vs all day 一整天；everybody 用单数动词。",[
+["这条街上的每栋房子都一样。","Every house in the street is the same."],
+["每个国家都有国旗。","Every country has a national flag.|Every country has a flag."],
+["上周每天都下雨。","It rained every day last week."],
+["昨天下了一整天雨。","It rained all day yesterday."],
+["每个人都需要朋友。","Everybody needs friends.|Everyone needs friends."],
+["我到处都找过我的手表了。","I've looked everywhere for my watch.|I looked everywhere for my watch."]]],
+[81,"all, most, some, any, no/none","泛指：most children；特指：most of the children / of my friends / of them。",[
+["大多数孩子喜欢玩。","Most children like playing.|Most children like to play."],
+["有些鸟不会飞。","Some birds can't fly."],
+["这所学校的大多数孩子不满11岁。","Most of the children at this school are under 11 years old.|Most of the children at this school are under eleven."],
+["我的朋友都不住在我附近。","None of my friends live near me.|None of my friends lives near me."],
+["我有很多书，但一本都没读过。","I've got a lot of books, but I haven't read any of them.|I have a lot of books, but I haven't read any of them."],
+["你可以吃一些这个蛋糕，但不能全吃了。","You can have some of this cake, but not all of it."]]],
+[82,"both, either, neither","两者：both 都；either 任一；neither 都不；neither of + 复数名词。",[
+["丽贝卡有两个孩子，两个都结婚了。","Rebecca has two children. Both are married.|Rebecca has two children. Both of them are married."],
+["你想喝茶还是咖啡？——都行。","Would you like tea or coffee? — Either. I don't mind.|Would you like tea or coffee? — Either."],
+["你想去电影院还是剧院？——都不去，我想待在家。","Do you want to go to the cinema or the theatre? — Neither. I want to stay at home."],
+["我父母都不是英国人。","Neither of my parents is British.|Neither of my parents is English.|Neither of my parents are British."],
+["那两幅画我都喜欢。","I like both of those pictures.|I like both those pictures."],
+["苏和我什么都没吃，我们俩都不饿。","Sue and I didn't eat anything. Neither of us was hungry.|Sue and I didn't eat anything. Neither of us were hungry."]]],
+[83,"a lot, much, many","much + 不可数，many + 复数，a lot of 都行；much 一般不用于肯定句。",[
+["你买了很多食物吗？","Did you buy much food?|Did you buy a lot of food?"],
+["我们认识的人不多。","We don't know many people.|We don't know a lot of people."],
+["你拍了多少张照片？","How many photos did you take?|How many photographs did you take?|How many pictures did you take?"],
+["我喝很多咖啡。","I drink a lot of coffee."],
+["我们行李不多。","We haven't got much luggage.|We don't have much luggage."],
+["我们喜欢电影，所以常去电影院。","We like films, so we go to the cinema a lot."]]],
+[84,"(a) little, (a) few","a little + 不可数 / a few + 复数：有一些；little / few（无 a）：几乎没有。",[
+["我会说一点西班牙语。","I speak a little Spanish.|I can speak a little Spanish."],
+["我们要离开几天。","We're going away for a few days."],
+["冰箱里几乎没什么吃的。","There's very little food in the fridge.|There's little food in the fridge."],
+["你的英语很好，几乎不犯错。","Your English is very good. You make very few mistakes."],
+["他们有一点钱，所以不穷。","They have a little money, so they're not poor.|They have a little money, so they aren't poor."],
+["我有几个朋友，所以不孤单。","I've got a few friends, so I'm not lonely.|I have a few friends, so I'm not lonely."]]],
+[85,"old/nice/interesting 等（形容词）","形容词放在名词前；be/look/feel/smell/taste/sound + 形容词。",[
+["这个村子里有一座很古老的桥。","There's a very old bridge in this village."],
+["你喜欢意大利菜吗？","Do you like Italian food?"],
+["我不会说任何外语。","I don't speak any foreign languages.|I can't speak any foreign languages."],
+["你看起来很累。","You look tired.|You look very tired."],
+["这条鱼闻起来不好。","This fish doesn't smell good.|This fish smells bad."],
+["他的新工作听起来很有趣。","His new job sounds very interesting.|His new job sounds interesting."]]],
+[86,"quickly/badly/suddenly 等（副词）","副词修饰动词：形容词 + -ly；good → well；hard/fast/late/early 形容词副词同形。",[
+["他很快地吃完了晚饭。","He ate his dinner very quickly.|He ate his dinner quickly."],
+["火车突然停了。","The train stopped suddenly.|Suddenly the train stopped."],
+["请仔细听。","Please listen carefully.|Listen carefully, please."],
+["我们队踢得很差。","Our team played badly.|Our team played very badly."],
+["你英语说得很好。","You speak English very well."],
+["苏工作很努力。","Sue works very hard.|Sue works hard."]]],
+[87,"old/older, expensive/more expensive","单音节 + -er；以 -y 结尾变 -ier；多音节用 more；good→better, bad→worse, far→further。",[
+["罗马很古老，但雅典更古老。","Rome is old, but Athens is older."],
+["坐出租车更容易。","It's easier to take a taxi."],
+["你必须更小心一点。","You must be more careful."],
+["我想做些更有趣的事。","I want to do something more interesting."],
+["昨天天气不太好，但今天好些了。","The weather wasn't very good yesterday, but it's better today."],
+["你今天感觉好些了吗？——不，我感觉更糟了。","Do you feel better today? — No, I feel worse."]]],
+[88,"older than ..., more expensive than ...","比较级 + than；than me/him；a bit / much + 比较级。",[
+["雅典比罗马古老。","Athens is older than Rome."],
+["橙子比香蕉贵吗？","Are oranges more expensive than bananas?"],
+["我跑得比他快。","I can run faster than him.|I can run faster than he can.|I run faster than him."],
+["电影很短，不到一小时。","The film was very short — less than an hour.|The film was very short. It was less than an hour."],
+["苏比加里大一点。","Sue is a bit older than Gary.|Sue is a little older than Gary."],
+["那家酒店比我预想的贵得多。","The hotel was much more expensive than I expected."]]],
+[89,"not as ... as","not as + 原级 + as = 不如；the same as = 和……一样。",[
+["罗马没有雅典古老。","Rome is not as old as Athens.|Rome isn't as old as Athens."],
+["我打网球没你那么频繁。","I don't play tennis as often as you.|I don't play tennis as often as you do."],
+["我的钱没你多。","I haven't got as much money as you.|I don't have as much money as you."],
+["网球没有足球受欢迎。","Tennis isn't as popular as football.|Tennis is not as popular as football."],
+["今天的天气和昨天一样。","The weather today is the same as yesterday."],
+["我和蒂姆同时到达。","I arrived at the same time as Tim."]]],
+[90,"the oldest, the most expensive","the + 最高级 + in（地点/群体）；最高级 + I've ever ...。",[
+["那座教堂是镇上最古老的建筑。","The church is the oldest building in the town.|The church is the oldest building in town."],
+["世界上最长的河是哪条？","What is the longest river in the world?|Which is the longest river in the world?"],
+["钱很重要，但不是生活中最重要的东西。","Money is important, but it isn't the most important thing in life."],
+["请问最近的银行在哪儿？","Excuse me, where is the nearest bank?"],
+["这是我看过的最糟糕的电影。","It's the worst film I've ever seen.|This is the worst film I've ever seen."],
+["那是我人生中最快乐的一天。","It was the happiest day of my life.|That was the happiest day of my life."]]],
+[91,"enough","enough + 名词（enough money）；形容词 + enough（tall enough）；enough ... to do。",[
+["她不打算坐出租车，她的钱不够。","She isn't going to take a taxi. She hasn't got enough money.|She isn't going to take a taxi. She doesn't have enough money."],
+["他够不着架子，他不够高。","He can't reach the shelf. He isn't tall enough."],
+["你咖啡里的牛奶够吗？","Is there enough milk in your coffee?"],
+["我们坐外面好吗？——不，不够暖和。","Shall we sit outside? — No, it isn't warm enough.|Shall we sit outside? — No, it's not warm enough."],
+["我的钱不够买新车。","I haven't got enough money to buy a new car.|I don't have enough money to buy a new car."],
+["椅子不够，没法让每个人都坐下。","There aren't enough chairs for everybody to sit down.|There aren't enough chairs for everyone to sit down."]]],
+[92,"too","too + 形容词 = 太；too much + 不可数，too many + 复数；too ... to do。",[
+["他的鞋对他来说太大了。","His shoes are too big for him."],
+["我没法工作，我太累了。","I can't work. I'm too tired."],
+["我觉得你工作太努力了。","I think you work too hard."],
+["这里人太多了，我们去另一家餐馆吧。","There are too many people here. Let's go to another restaurant."],
+["我太累了，不想出去。","I'm too tired to go out."],
+["外面太冷了，没法坐。","It's too cold to sit outside."]]],
+[93,"He speaks English very well.（词序 1）","动词和宾语不分开（不说 speaks very well English）；先地点后时间。",[
+["苏每天看报纸。","Sue reads a newspaper every day.|Sue reads the newspaper every day."],
+["我非常喜欢意大利菜。","I like Italian food very much.|I really like Italian food."],
+["我慢慢地打开了门。","I opened the door slowly.|I slowly opened the door."],
+["我们昨晚去了一个聚会。","We went to a party last night."],
+["丽莎每天走路上班。","Lisa walks to work every day."],
+["他们在同一座房子里住了二十年了。","They've lived in the same house for 20 years.|They've lived in the same house for twenty years.|They've been living in the same house for 20 years."]]],
+[94,"always/usually/often 等（词序 2）","放在实义动词前、be 动词后、两个动词之间：I always go / I am always / I can never。",[
+["我哥哥从不跟我说话。","My brother never speaks to me.|My brother never talks to me."],
+["她总是迟到。","She's always late."],
+["我早上总是喝咖啡。","I always drink coffee in the morning."],
+["我会永远记得你。","I will always remember you.|I'll always remember you."],
+["我总是找不到我的钥匙。","I can never find my keys."],
+["我有三个姐姐，她们都住在伦敦。","I've got three sisters. They all live in London.|I have three sisters. They all live in London."]]],
+[95,"still, yet, already","still 仍然；yet 用于否定/疑问句尾，到现在为止；already 已经（比预期早）。",[
+["我吃了很多，但还是饿。","I had a lot to eat, but I'm still hungry.|I ate a lot, but I'm still hungry."],
+["你还住在巴塞罗那吗？","Do you still live in Barcelona?"],
+["艾玛在哪儿？——她还没到。","Where's Emma? — She isn't here yet.|Where's Emma? — She's not here yet.|Where's Emma? — She hasn't arrived yet."],
+["你准备好走了吗？——还没有。","Are you ready to go yet? — Not yet.|Are you ready to go? — Not yet."],
+["萨拉不和我们去看电影了，她已经看过那部片子了。","Sarah isn't coming to the cinema with us. She has already seen the film."],
+["我还没吃完。","I haven't finished eating yet.|I'm still eating."]]],
+[96,"Give me that book! Give it to me!","give/lend/send/show sb sth = sth to sb；宾语是 it/them 时用 give it to me。",[
+["我把钥匙给了萨拉。","I gave the keys to Sarah.|I gave Sarah the keys."],
+["那是我的书，把它给我。","That's my book. Give it to me."],
+["汤姆给了他妈妈一些花。","Tom gave his mother some flowers.|Tom gave some flowers to his mother."],
+["你能把盐递给我吗？","Can you pass me the salt, please?|Could you pass me the salt, please?|Can you pass me the salt?"],
+["我给你发了一封邮件，你收到了吗？","I sent you an email. Did you get it?"],
+["你出去时能给我买份报纸吗？","Can you get me a newspaper when you go out?|Can you buy me a newspaper when you go out?"]]],
+[97,"and, but, or, so, because","and 和；but 但是；or 或者；so 所以（结果）；because 因为（原因）。",[
+["我们待在家里看电视。","We stayed at home and watched television.|We stayed at home and watched TV."],
+["我买了份报纸，但没看。","I bought a newspaper, but I didn't read it."],
+["你想出去吗，还是太累了？","Do you want to go out, or are you too tired?"],
+["天很热，所以我打开了窗户。","It was very hot, so I opened the window."],
+["我打开了窗户，因为天很热。","I opened the window because it was very hot."],
+["丽莎饿了，因为她没吃早饭。","Lisa is hungry because she didn't have breakfast.|Lisa is hungry because she didn't eat breakfast."]]],
+[98,"when ...","when/before/while/after/until 引导的从句表示将来时用一般现在时（不用 will）。",[
+["我出门时正在下雨。","When I went out, it was raining.|It was raining when I went out."],
+["过马路前一定要看两边。","Always look both ways before you cross the road."],
+["我等公交车时开始下雨了。","While I was waiting for the bus, it began to rain.|It started to rain while I was waiting for the bus.|It began to rain while I was waiting for the bus."],
+["我今晚到家后要洗个澡。","When I get home this evening, I'm going to have a shower.|When I get home this evening, I'll have a shower."],
+["我在这儿等你回来。","I'll wait here until you come back."],
+["出门前请关窗。","Please close the window before you go out."]]],
+[99,"if we go ..., if you see ... 等","if 从句用一般现在时表示将来，主句用 will/can/祈使句。",[
+["如果我们坐公交车，会便宜些。","If we go by bus, it will be cheaper.|It will be cheaper if we go by bus."],
+["如果你不快点，就会赶不上火车。","If you don't hurry, you'll miss the train.|You'll miss the train if you don't hurry."],
+["如果你饿了，就吃点东西吧。","If you're hungry, have something to eat."],
+["如果你明天见到安，能叫她给我打电话吗？","If you see Ann tomorrow, can you ask her to call me?|If you see Ann tomorrow, can you ask her to phone me?"],
+["如果我今晚迟到，别等我。","If I'm late this evening, don't wait for me.|If I'm late tonight, don't wait for me."],
+["如果下雨我们怎么办？","What shall we do if it rains?|What will we do if it rains?"]]],
+[100,"if I had ..., if we went ... 等","与现在事实相反：if + 过去式，主句 would/could + 原形；if I were you。",[
+["如果他有钱，他就会买辆快车。","If he had the money, he would buy a fast car.|If he had money, he would buy a fast car."],
+["我不知道答案。如果我知道，我就会告诉你。","I don't know the answer. If I knew the answer, I would tell you.|I don't know the answer. If I knew, I would tell you."],
+["如果我们有车，就能多出去旅行。","If we had a car, we could travel more."],
+["如果我是你，我就不去那儿。","I wouldn't go there if I were you.|If I were you, I wouldn't go there.|If I was you, I wouldn't go there."],
+["要是天气好一些就好了。","It would be nice if the weather was better.|It would be nice if the weather were better."],
+["如果你没有工作，你会做什么？","If you didn't have a job, what would you do?|What would you do if you didn't have a job?"]]],
+[101,"a person who ..., a thing that/which ...（定语从句 1）","指人用 who/that，指物用 that/which。",[
+["我认识了一个会说六种语言的女人。","I met a woman who can speak six languages.|I met a woman who speaks six languages.|I met a woman that can speak six languages."],
+["小偷是偷东西的人。","A thief is a person who steals things.|A thief is someone who steals things."],
+["你认识会弹钢琴的人吗？","Do you know anybody who can play the piano?|Do you know anyone who can play the piano?"],
+["打电话来的那个男人没留下名字。","The man who phoned didn't give his name.|The man who called didn't give his name."],
+["艾玛住在一座有四百年历史的房子里。","Emma lives in a house which is 400 years old.|Emma lives in a house that is 400 years old."],
+["飞机是一种会飞的机器。","An aeroplane is a machine that flies.|An aeroplane is a machine which flies.|A plane is a machine that flies."]]],
+[102,"the people we met, the hotel you stayed at（定语从句 2）","关系词做宾语时可省略；介词留在句尾（the hotel we stayed at），不重复 it/them。",[
+["他提的那个包很重。","The bag he is carrying is very heavy.|The bag that he is carrying is very heavy."],
+["凯特打算拿她赢的钱做什么？","What is Kate going to do with the money she won?|What is Kate going to do with the money that she won?"],
+["你找到你想要的书了吗？","Did you find the book you wanted?|Did you find the books you wanted?|Did you find the book that you wanted?"],
+["我们遇到的人都很友好。","The people we met were very friendly.|The people who we met were very friendly.|The people that we met were very friendly."],
+["我们住的酒店离车站很近。","The hotel we stayed at was near the station.|The hotel where we stayed was near the station."],
+["你认识和伊芙说话的那个男人吗？","Do you know the man Eve is talking to?|Do you know the man that Eve is talking to?"]]],
+[103,"at 8 o'clock, on Monday, in April","at + 钟点/night/the weekend；on + 星期/日期；in + 月/年/季节；in five minutes = 五分钟后。",[
+["我八点开始工作。","I start work at 8 o'clock.|I start work at eight o'clock."],
+["周五见！","See you on Friday!|I'll see you on Friday."],
+["音乐会在11月22日。","The concert is on 22 November.|The concert is on November 22."],
+["艾玛出生于1983年。","Emma was born in 1983."],
+["我晚上睡不着。","I can't sleep at night."],
+["快点！火车五分钟后开。","Hurry! The train leaves in five minutes.|Hurry up! The train leaves in five minutes."]]],
+[104,"from ... to, until, since, for","from ... to/until 从……到；until 直到；since + 起点（配完成时）；for + 一段时间。",[
+["我们从1992年到2001年住在日本。","We lived in Japan from 1992 to 2001.|We lived in Japan from 1992 until 2001."],
+["我周一到周五上班。","I work from Monday to Friday."],
+["他们要离开到周五。（周五才回来）","They'll be away until Friday."],
+["乔从周一起就住院了。","Joe has been in hospital since Monday.|Joe has been in the hospital since Monday."],
+["在这儿等到我回来。","Wait here until I come back.|Wait here till I come back."],
+["加里在我们家住了三天。","Gary stayed with us for three days."]]],
+[105,"before, after, during, while","during + 名词；while + 句子；for + 一段时间；before/after + -ing。",[
+["考试前每个人都紧张。","Everybody feels nervous before exams.|Everyone feels nervous before exams.|Everybody is nervous before exams."],
+["我看电影时睡着了。","I fell asleep during the film."],
+["我看书时常常睡着。","I often fall asleep while I'm reading.|I often fall asleep while reading."],
+["吃饭时我们没说话。","We didn't speak during the meal.|We didn't speak while we were eating.|We didn't talk during the meal."],
+["我们打了两个小时网球。","We played tennis for two hours."],
+["我总是吃了早饭再去上班。","I always have breakfast before going to work.|I always have breakfast before I go to work."]]],
+[106,"in, at, on（地点 1）","in 在……里面；at 在某个点（at the door, at the bus stop）；on 在表面上（on the wall）。",[
+["大卫在哪儿？——在厨房。","Where's David? — In the kitchen.|Where's David? — He's in the kitchen."],
+["那个盒子里有什么？","What's in that box?"],
+["米兰在意大利北部。","Milan is in the north of Italy."],
+["公交车站有人。","There's somebody at the bus stop.|There's someone at the bus stop."],
+["我家在这条街的尽头。","My house is at the end of the street."],
+["架子上有些书，墙上有几幅画。","There are some books on the shelf and some pictures on the wall."]]],
+[107,"in, at, on（地点 2）","in bed/hospital/a photo/the world；at home/work/school/the station/a party；on a bus/the first floor/the way。",[
+["凯特还在床上。","Kate is still in bed.|Kate's still in bed."],
+["大卫的父亲病了，他在住院。","David's father is ill. He's in hospital.|David's father is ill. He's in the hospital."],
+["你在这张照片里看起来很伤心。","You look sad in this photograph.|You look sad in this photo."],
+["你今晚在家吗？","Will you be at home this evening?|Will you be at home tonight?|Are you at home this evening?"],
+["我在车站接你，好吗？","I'll meet you at the station, OK?"],
+["我在上班路上遇到了安。","I met Ann on the way to work.|I met Ann on my way to work."]]],
+[108,"to, in, at（地点 3）","去某地用 to；在某地用 in/at；go home（无 to）；arrive in + 国家/城市，arrive at + 其他地点。",[
+["我们周日要去伦敦。","We're going to London on Sunday."],
+["你通常几点上床睡觉？","What time do you usually go to bed?"],
+["我喜欢在床上看书。","I like reading in bed.|I like to read in bed."],
+["我今晚待在家里。","I'm staying at home tonight.|I'm staying at home this evening."],
+["他们上周到达了英国。","They arrived in England last week.|They arrived in Britain last week."],
+["你几点到的酒店？","What time did you arrive at the hotel?|What time did you get to the hotel?"]]],
+[109,"under, behind, opposite 等","next to/beside/by 旁边；between 中间；in front of 前面；behind 后面；opposite 对面；above/below 上/下方。",[
+["我们家在海边。","Our house is by the sea.|Our house is next to the sea."],
+["猫在桌子下面。","The cat is under the table."],
+["站在窗边的那个男人是谁？","Who is that man standing by the window?|Who's the man standing by the window?"],
+["电影院在银行对面。","The cinema is opposite the bank."],
+["我站在他后面。","I'm standing behind him."],
+["那些画在架子上方。","The pictures are above the shelves.|The pictures are above the shelf."]]],
+[110,"up, over, through 等","表示移动路线：into/out of/up/down/over/under/through/round/along/across/past。",[
+["我们跳进了水里。","We jumped into the water."],
+["一个男人从房子里出来，上了一辆车。","A man came out of the house and got into a car."],
+["别把脚放在桌子上。","Don't put your feet on the table."],
+["飞机飞过了群山。","The plane flew over the mountains."],
+["一只鸟从窗户飞进了房间。","A bird flew into the room through a window.|A bird flew through the window into the room.|A bird flew into the room through the window."],
+["狗游过了河。","The dog swam across the river."]]],
+[111,"on, at, by, with, about","on holiday/TV/time；at the age of；by car/train（on foot）；with/without；about = 关于。",[
+["简这周不上班，她在度假。","Jane isn't at work this week. She's on holiday."],
+["我们在电视上看了新闻。","We watched the news on television.|We watched the news on TV."],
+["火车准点吗？","Was the train on time?|Is the train on time?"],
+["你喜欢坐火车旅行吗？","Do you like travelling by train?"],
+["你认识那个留胡子的男人吗？","Do you know that man with the beard?|Do you know the man with the beard?"],
+["我对汽车不太了解。","I don't know much about cars."]]],
+[112,"afraid of ..., good at ... 等","形容词 + 介词固定搭配；介词后的动词用 -ing：good at telling, without saying。",[
+["你怕狗吗？","Are you afraid of dogs?"],
+["你擅长数学吗？","Are you good at maths?|Are you good at math?"],
+["我对体育不感兴趣。","I'm not interested in sport.|I'm not interested in sports."],
+["谢谢你帮助我。","Thank you for helping me.|Thanks for helping me."],
+["马克在考虑买一辆新车。","Mark is thinking of buying a new car.|Mark is thinking about buying a new car."],
+["汤姆没说再见就走了。","Tom left without saying goodbye."]]],
+[113,"listen to ..., look at ... 等（动词 + 介词）","listen to, look at/for/after, wait for, belong to, depend on；phone sb（无 to）。",[
+["听这首音乐！","Listen to this music!"],
+["这本书是你的吗？（用 belong）","Does this book belong to you?"],
+["你为什么那样看着我？","Why are you looking at me like that?"],
+["我在找萨拉，你见到她了吗？","I'm looking for Sarah. Have you seen her?"],
+["艾米莉上班时，她的一个朋友照看她的孩子。","When Emily is at work, a friend of hers looks after her children."],
+["你喜欢在餐馆吃饭吗？——看情况，取决于是哪家餐馆。","Do you like eating in restaurants? — It depends on the restaurant.|Do you like eating in restaurants? — Sometimes. It depends on the restaurant."]]],
+[114,"go in, fall off, run away 等（短语动词 1）","动词 + in/out/on/off/up/down/away/back/over/round。",[
+["我在商店外面等，没有进去。","I waited outside the shop. I didn't go in."],
+["公交车来了，我上了车。","The bus came and I got on.|The bus came, and I got on."],
+["他站起来离开了房间。","He stood up and left the room.|He got up and left the room."],
+["小偷逃跑了。","The thief ran away.|The thief ran off."],
+["蒂姆不在，他周一回来。","Tim is away. He'll be back on Monday.|Tim is away. He'll come back on Monday."],
+["有人喊我的名字，所以我回头看了看。","Somebody shouted my name, so I looked round.|Somebody shouted my name, so I looked around.|Someone shouted my name, so I looked round."]]],
+[115,"put on your shoes, put your shoes on（短语动词 2）","put on the coat = put the coat on；宾语是 it/them 必须放中间：put it on（不说 put on it）。",[
+["天很冷，所以我穿上了外套。","It was cold, so I put on my coat.|It was cold, so I put my coat on."],
+["这是你的外套，穿上吧。","Here's your coat. Put it on."],
+["你的鞋脏了，把它们脱掉。","Your shoes are dirty. Take them off."],
+["天黑了，所以我打开了灯。","It was dark, so I turned on the light.|It was dark, so I turned the light on.|It was dark, so I switched on the light."],
+["我不想看这个节目，你可以把它关了。","I don't want to watch this programme. You can turn it off.|I don't want to watch this programme. You can switch it off."],
+["你可以拿我的伞，但请记得还回来。","You can take my umbrella, but please bring it back."]]]
+];
+
+const SECTIONS = [
+[1,9,"现在时"],[10,14,"过去时"],[15,20,"现在完成时"],[21,22,"被动语态"],[23,24,"动词形式"],
+[25,28,"将来时"],[29,36,"情态动词、祈使语气等"],[37,39,"there 与 it"],[40,43,"助动词"],[44,49,"疑问句"],
+[50,50,"间接引语"],[51,54,"-ing 形式与不定式"],[55,58,"go, get, do, make, have"],[59,64,"代词与所有格"],
+[65,73,"a/an 与 the"],[74,84,"限定词与代词"],[85,92,"形容词与副词"],[93,96,"词序"],[97,102,"连词与从句"],
+[103,113,"介词"],[114,115,"短语动词"]
+];
+
+</script>
+<script>
+const KEY="egiu-c2e-v1";
+const DAY=864e5, PASS=0.8, INTERVALS=[0,1,2,4,8,16,32];
+const BY={}; U.forEach(([n,t,tip,s])=>BY[n]={n,t,tip,s:s.map(([zh,en])=>({zh,refs:en.split("|")}))});
+const N=U.length;
+
+function fresh(){return {units:{},items:{},unlockAll:false,log:[]}}
+let S=load();
+function load(){try{const r=localStorage.getItem(KEY);if(r)return Object.assign(fresh(),JSON.parse(r))}catch(e){}return fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const uState=n=>S.units[n]||{attempts:0,best:0,last:0,mastered:false};
+const unlocked=n=>S.unlockAll||n===1||uState(n-1).mastered||uState(n).attempts>0;
+function currentUnit(){for(let n=1;n<=N;n++){if(!uState(n).mastered&&unlocked(n))return n}return null}
+const keyOf=(u,i)=>u+"-"+i;
+const parseKey=k=>k.split("-").map(Number);
+function dueKeys(exclude){const now=Date.now();return Object.entries(S.items).filter(([k,v])=>v.due<=now&&parseKey(k)[0]!==exclude).sort((a,b)=>a[1].box-b[1].box||a[1].due-b[1].due).map(e=>e[0])}
+
+/* ---------- answer matching ---------- */
+const SPELL={colour:"color",colours:"colors",favourite:"favorite",favourites:"favorites",centre:"center",theatre:"theater",travelling:"traveling",travelled:"traveled",programme:"program",kilometres:"kilometers",kilometre:"kilometer",maths:"math",learnt:"learned",tv:"television",okay:"ok",aeroplane:"airplane",mr:"mr",realise:"realize"};
+const NUM={two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10",eleven:"11",twelve:"12",twenty:"20",thirty:"30",fifty:"50",eighteen:"18",fifteen:"15"};
+const S_WORDS=new Set(["it","he","she","that","there","what","where","who","here","how","everything","everybody","nobody","nothing","something","somebody","someone","this"]);
+function baseNorm(s){
+  s=s.toLowerCase().replace(/[’‘`´]/g,"'").replace(/[“”"«»]/g," ");
+  s=s.replace(/(\d)[.:](\d)/g,"$1h$2");
+  s=s.replace(/\b(a|one) hundred\b/g,"100").replace(/\bfour hundred\b/g,"400").replace(/\bfive hundred\b/g,"500");
+  s=s.replace(/\bno[- ]one\b/g,"noone").replace(/\bcannot\b/g,"can not").replace(/\bwon't\b/g,"will not").replace(/\bshan't\b/g,"shall not").replace(/\bcan't\b/g,"can not");
+  s=s.replace(/n't\b/g," not").replace(/'re\b/g," are").replace(/'ve\b/g," have").replace(/'m\b/g," am").replace(/'ll\b/g," will");
+  s=s.replace(/[—–-]/g," ").replace(/[.,!?;:()…]/g," ");
+  return s.split(/\s+/).filter(Boolean).map(w=>SPELL[w]||NUM[w]||w);
+}
+function variants(s){
+  let out=[[]];
+  for(const w of baseNorm(s)){
+    let opts=[w];
+    let m=w.match(/^(\w+)'s$/); if(m&&S_WORDS.has(m[1]))opts=[m[1]+" is",m[1]+" has"];
+    m=w.match(/^(\w+)'d$/); if(m)opts=[m[1]+" would",m[1]+" had"];
+    if(opts.length>1&&out.length<16){const nx=[];for(const o of out)for(const p of opts)nx.push(o.concat(p.split(" ")));out=nx}
+    else out=out.map(o=>o.concat(opts[0].split(" ")));
+  }
+  return out.map(a=>a.join(" "));
+}
+function isMatch(ans,refs){const a=new Set(variants(ans));return refs.some(r=>variants(r).some(v=>a.has(v)))}
+function tokens(s){return s.replace(/[“”"]/g,"").trim().split(/\s+/).filter(Boolean)}
+const tnorm=w=>{const b=baseNorm(w);return b.join(" ")};
+function lcs(a,b){const A=a.map(tnorm),B=b.map(tnorm);const m=A.length,n=B.length;const d=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)d[i][j]=A[i]===B[j]?d[i+1][j+1]+1:Math.max(d[i+1][j],d[i][j+1]);
+  const ua=new Array(m).fill(false),ub=new Array(n).fill(false);let i=0,j=0;
+  while(i<m&&j<n){if(A[i]===B[j]){ua[i]=ub[j]=true;i++;j++}else if(d[i+1][j]>=d[i][j+1])i++;else j++}
+  return {len:d[0][0],ua,ub}}
+function closest(ans,refs){const a=tokens(ans);let best=null;
+  refs.forEach(r=>{const b=tokens(r);const x=lcs(a,b);const sc=x.len/Math.max(a.length,b.length,1);if(!best||sc>best.sc)best={sc,r,a,b,x}});return best}
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function markLine(toks,used,cls){return toks.map((t,i)=>used[i]?esc(t):`<span class="${cls}">${esc(t)}</span>`).join(" ")}
+
+/* ---------- views ---------- */
+const app=document.getElementById("app");
+let SES=null;
+
+function home(){
+  SES=null;
+  const cur=currentUnit();
+  const mastered=Object.values(S.units).filter(u=>u.mastered).length;
+  const due=dueKeys(null).length;
+  const done=Object.keys(S.items).length;
+  let nextHtml;
+  if(cur){const u=BY[cur],st=uState(cur);
+    nextHtml=`<div class="next">
+      <div class="unit-no">UNIT ${cur}${st.attempts?` · 已练 ${st.attempts} 轮，最好 ${Math.round(st.best*100)}%`:""}</div>
+      <h2>${esc(u.t)}</h2>
+      <div class="tip">${esc(u.tip)}</div>
+      <div class="row"><button class="primary" id="go">开始练习 Unit ${cur}</button>
+      <button id="rev" ${due?"":"disabled"}>复习到期的句子（${due}）</button></div>
+      <div class="kbd">本轮 6 句本单元 + 最多 3 句到期复习。本单元得分 ≥ 80% 即解锁下一单元。</div>
+    </div>`}
+  else nextHtml=`<div class="next"><h2>115 个单元全部掌握</h2><div class="tip">继续用复习保持手感。</div><div class="row"><button class="primary" id="rev" ${due?"":"disabled"}>复习（${due}）</button></div></div>`;
+
+  const secs=SECTIONS.map(([a,b,name])=>{
+    let cells="",m=0;
+    for(let n=a;n<=b;n++){const st=uState(n);const lk=!unlocked(n);if(st.mastered)m++;
+      const cls=n===cur?"cur":st.mastered?"done":lk?"locked":st.attempts?"tried":"";
+      const t=`Unit ${n} ${BY[n].t}${st.attempts?` · 最好 ${Math.round(st.best*100)}%`:""}`;
+      cells+=`<button class="cell ${cls}" data-u="${n}" title="${esc(t)}" aria-label="${esc(t)}">${n}</button>`}
+    return `<div class="sec"><div class="label"><span>${esc(name)}</span><span class="mono">${m}/${b-a+1}</span></div><div class="cells">${cells}</div></div>`}).join("");
+
+  app.innerHTML=`
+  <div class="top"><div><h1>剑桥语法中译英</h1><div class="sub">Essential Grammar in Use · 按掌握度逐单元推进</div></div>
+    <div class="stats"><div class="stat"><b>${mastered}<span class="muted" style="font-size:14px">/115</span></b><span>已掌握单元</span></div>
+    <div class="stat"><b>${due}</b><span>待复习</span></div><div class="stat"><b>${done}</b><span>练过的句子</span></div></div></div>
+  ${nextHtml}
+  <div class="map">
+    <div class="legend"><span><i style="background:var(--ok);border-color:var(--ok)"></i>已掌握</span><span><i style="background:var(--accent-soft);border:2px solid var(--accent)"></i>当前</span><span><i style="background:var(--mid-soft);border-color:var(--mid)"></i>练过未过关</span><span><i style="background:var(--surface)"></i>可练</span><span><i style="background:var(--cell-locked);border-style:dashed"></i>未解锁</span></div>
+    ${secs}
+  </div>
+  <div class="tools">
+    <button id="exp-wrong">导出错题给 AI（Markdown）</button>
+    <button id="backup">备份进度</button>
+    <button id="restore">恢复进度</button>
+    <label class="switch"><input type="checkbox" id="unlock" ${S.unlockAll?"checked":""}> 解锁全部单元</label>
+  </div>`;
+  const g=document.getElementById("go");if(g)g.onclick=()=>startUnit(cur);
+  const r=document.getElementById("rev");if(r)r.onclick=startReview;
+  app.querySelectorAll(".cell").forEach(c=>c.onclick=()=>{const n=+c.dataset.u;if(!unlocked(n)){toast(`先在 Unit ${n-1} 达到 80% 才能解锁`);return}startUnit(n)});
+  document.getElementById("exp-wrong").onclick=exportWrong;
+  document.getElementById("backup").onclick=()=>openSheet("备份进度","复制这段代码保存到备忘录。换设备或清除了浏览器数据时，用“恢复进度”粘贴回来。",JSON.stringify(S),false);
+  document.getElementById("restore").onclick=()=>openSheet("恢复进度","把之前备份的代码粘贴到下面，然后点“恢复进度”。当前进度会被覆盖。","",true);
+  document.getElementById("unlock").onchange=e=>{S.unlockAll=e.target.checked;save();home()};
+  window.scrollTo(0,0);
+}
+
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function startUnit(n){
+  const own=shuffle(BY[n].s.map((_,i)=>keyOf(n,i)));
+  const rev=dueKeys(n).slice(0,3);
+  const q=own.slice();[1,4,7].forEach((p,i)=>{if(rev[i])q.splice(Math.min(p,q.length),0,rev[i])});
+  SES={mode:"unit",unit:n,queue:q,idx:0,results:[]};practice();
+}
+function startReview(){
+  let q=dueKeys(null).slice(0,12);
+  if(!q.length){toast("现在没有到期的复习");return}
+  SES={mode:"review",unit:null,queue:shuffle(q),idx:0,results:[]};practice();
+}
+
+function practice(){
+  const k=SES.queue[SES.idx];const [u,i]=parseKey(k);const unit=BY[u];const item=unit.s[i];
+  const isRev=SES.mode==="unit"&&u!==SES.unit||SES.mode==="review";
+  app.innerHTML=`
+  <div class="bar"><button class="ghost" id="quit">退出</button><div class="progress"><div style="width:${SES.idx/SES.queue.length*100}%"></div></div><span class="mono muted">${SES.idx+1}/${SES.queue.length}</span></div>
+  <div class="card">
+    <div class="tag"><span class="chip ${isRev?"review":""}">${isRev?"复习":"新练"} · Unit ${u}</span><span>${esc(unit.t)}</span></div>
+    <div class="zh">${esc(item.zh)}</div>
+    <div class="row"><button class="ghost" id="hintbtn" style="min-height:36px;padding:4px 12px;font-size:14px">语法提示</button></div>
+    <div class="hint" id="hint" hidden>${esc(unit.tip)}</div>
+    <textarea id="ans" rows="3" placeholder="Type the English sentence…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="row"><button class="primary" id="check">检查</button><span class="kbd">回车检查 · Shift+回车换行</span></div>
+    <div id="fb"></div>
+  </div>`;
+  const ta=document.getElementById("ans");ta.focus();
+  document.getElementById("quit").onclick=()=>{if(SES.results.length)finish();else home()};
+  document.getElementById("hintbtn").onclick=()=>{const h=document.getElementById("hint");h.hidden=!h.hidden};
+  ta.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();check()}};
+  document.getElementById("check").onclick=check;
+
+  function check(){
+    const ans=ta.value.trim();if(!ans){ta.focus();return}
+    ta.readOnly=true;document.getElementById("check").hidden=true;
+    const fb=document.getElementById("fb");
+    const ok=isMatch(ans,item.refs);
+    const c=closest(ans,item.refs);
+    const others=item.refs.filter(r=>r!==c.r);
+    const altHtml=others.length?`<div class="alts">也可以：${others.map(r=>`<div class="en">${esc(r)}</div>`).join("")}</div>`:"";
+    if(ok){
+      fb.innerHTML=`<div class="fb"><div class="verdict ok">完全正确</div>
+        <div class="lines"><div class="ln"><span class="k">参考</span><span class="en">${esc(c.r)}</span></div></div>${altHtml}
+        <div class="row"><button class="primary" id="next">下一题</button><span class="kbd">回车继续</span></div></div>`;
+      record(k,ans,1,true);
+      const nx=document.getElementById("next");nx.onclick=advance;nx.focus();
+    }else{
+      fb.innerHTML=`<div class="fb"><div class="verdict check">和参考答案对比一下，再给自己打分</div>
+        <div class="lines">
+          <div class="ln"><span class="k">你的</span><span class="en">${markLine(c.a,c.x.ua,"extra")}</span></div>
+          <div class="ln"><span class="k">参考</span><span class="en">${markLine(c.b,c.x.ub,"miss")}</span></div>
+        </div>${altHtml}
+        <div class="kbd">红色划线 = 参考答案里没有的词；绿色 = 你漏掉或写法不同的词。同义改写算对。</div>
+        <div class="grade"><button class="g1" data-g="1">对（1）</button><button class="g2" data-g="0.5">部分对（2）</button><button class="g0" data-g="0">错（3）</button></div></div>`;
+      fb.querySelectorAll(".grade button").forEach(b=>b.onclick=()=>{record(k,ans,+b.dataset.g,false);advance()});
+      fb.querySelector(".g1").focus();
+    }
+    document.onkeydown=e=>{
+      if(e.isComposing)return;
+      if(ok&&e.key==="Enter"){e.preventDefault();advance()}
+      if(!ok&&["1","2","3"].includes(e.key)){e.preventDefault();record(k,ans,[1,0.5,0][+e.key-1],false);advance()}
+    };
+  }
+}
+function record(k,ans,g,auto){
+  const now=Date.now();const it=S.items[k]||{box:0,due:now,right:0,wrong:0};
+  if(g===1){it.box=Math.min(it.box+1,INTERVALS.length-1);it.due=now+INTERVALS[it.box]*DAY;it.right++}
+  else if(g===0.5){it.box=Math.max(0,it.box-1);it.due=now+DAY/2;it.wrong++}
+  else{it.box=0;it.due=now;it.wrong++}
+  it.last=ans;it.lastGrade=g;it.t=now;S.items[k]=it;
+  SES.results.push({k,ans,g,auto});save();
+}
+function advance(){document.onkeydown=null;SES.idx++;if(SES.idx>=SES.queue.length)finish();else practice()}
+
+function finish(){
+  document.onkeydown=null;
+  let banner="",scoreHtml="",nextBtn="";
+  if(SES.mode==="unit"){
+    const n=SES.unit;const own=SES.results.filter(r=>parseKey(r.k)[0]===n);
+    const pts=own.reduce((s,r)=>s+r.g,0);const total=BY[n].s.length;
+    const complete=own.length===total;
+    const st=Object.assign({attempts:0,best:0,last:0,mastered:false},S.units[n]);
+    if(complete){const sc=pts/total;st.attempts++;st.last=sc;st.best=Math.max(st.best,sc);
+      const was=st.mastered;if(sc>=PASS)st.mastered=true;S.units[n]=st;S.log.push({t:Date.now(),u:n,sc});save();
+      scoreHtml=`<div class="score">${fmt(pts)}<span class="muted" style="font-size:22px"> / ${total}</span></div>`;
+      if(sc>=PASS){banner=`<div class="banner ok">Unit ${n} 过关${was?"（已掌握单元的复练）":""}。${n<N?`Unit ${n+1} 已解锁。`:""}</div>`;
+        const nx=currentUnit();if(nx)nextBtn=`<button class="primary" id="nextu">继续 Unit ${nx}</button>`}
+      else{banner=`<div class="banner mid">得分 ${Math.round(sc*100)}%，还差一点（需要 80%）。先把下面的错句看懂，再练一轮。</div>`;
+        nextBtn=`<button class="primary" id="again">再练 Unit ${n}</button>`}
+    }else{banner=`<div class="banner mid">本轮中途退出，不计入过关判定。已练的句子会进入复习。</div>`;nextBtn=`<button class="primary" id="again">重新练 Unit ${n}</button>`}
+  }else{
+    const pts=SES.results.reduce((s,r)=>s+r.g,0);
+    scoreHtml=`<div class="score">${fmt(pts)}<span class="muted" style="font-size:22px"> / ${SES.results.length}</span></div>`;
+    banner=`<div class="banner ok">复习完成。答错的句子会很快再次出现。</div>`;
+  }
+  const list=SES.results.map(r=>{const [u,i]=parseKey(r.k);const it=BY[u].s[i];
+    return `<div class="res-item"><div class="row" style="gap:8px"><span class="pill g${r.g===1?1:r.g===0.5?2:0}">${r.g===1?"对":r.g===0.5?"部分对":"错"}</span><span class="mono muted" style="font-size:12px">Unit ${u}</span></div>
+      <div class="zhs">${esc(it.zh)}</div>
+      ${r.g===1&&r.auto?"":`<div class="en">${esc(r.ans)}</div>`}
+      <div class="en muted">${esc(it.refs[0])}</div></div>`}).join("");
+  app.innerHTML=`
+    <div class="card">
+      <div class="label">${SES.mode==="unit"?`UNIT ${SES.unit} · ${esc(BY[SES.unit].t)}`:"复习"}</div>
+      ${scoreHtml}${banner}
+      <div class="row">${nextBtn}<button id="ai">复制本轮给 AI 批改</button><button class="ghost" id="back">回首页</button></div>
+    </div>
+    <div class="card"><h3 style="font-size:16px">本轮句子</h3><div class="res">${list}</div></div>`;
+  const nu=document.getElementById("nextu");if(nu)nu.onclick=()=>startUnit(currentUnit());
+  const ag=document.getElementById("again");if(ag)ag.onclick=()=>startUnit(SES.unit);
+  document.getElementById("back").onclick=home;
+  const res=SES.results;
+  document.getElementById("ai").onclick=()=>openSheet("复制给 AI 批改","粘贴到 Claude 或其他 AI，让它逐句批改。",buildMd(res.map(r=>({k:r.k,ans:r.ans,g:r.g,auto:r.auto})),"本轮练习"),false);
+  window.scrollTo(0,0);
+}
+const fmt=x=>Number.isInteger(x)?String(x):x.toFixed(1);
+const GL={1:"对",0.5:"部分对",0:"错"};
+
+function buildMd(rows,label){
+  const head=`# 中译英批改请求（${label}）
+
+我在用《剑桥初级英语语法》（Essential Grammar in Use）练习中译英，准备以后考雅思。请你作为英语老师，逐句批改下面我的翻译：
+
+1. 判断我的句子在语法和用词上是否正确（意思对、和参考答案不同的说法也算对）。
+2. 如果有错，指出错在哪里，并用中文简单解释涉及的语法点（尽量对应书中的 Unit）。
+3. 给出一个更自然的说法。
+4. 最后总结我最常犯的 2–3 类错误，并各给 2 个新的中译英练习句（附答案）。
+
+`;
+  const body=rows.map((r,idx)=>{const [u,i]=parseKey(r.k);const it=BY[u].s[i];
+    return `## ${idx+1}. Unit ${u} · ${BY[u].t}
+- 中文：${it.zh}
+- 我的翻译：${r.ans||"（没有记录）"}
+- 参考答案：${it.refs.join(" / ")}
+- 我的自评：${GL[r.g]??"—"}${r.auto?"（与参考答案完全一致）":""}`}).join("\n\n");
+  return head+body+"\n";
+}
+function exportWrong(){
+  const rows=Object.entries(S.items).filter(([k,v])=>v.lastGrade!==1||v.box<2&&v.wrong>0)
+    .sort((a,b)=>parseKey(a[0])[0]-parseKey(b[0])[0]).slice(0,40)
+    .map(([k,v])=>({k,ans:v.last,g:v.lastGrade,auto:false}));
+  if(!rows.length){toast("还没有错题，先练一轮吧");return}
+  openSheet("导出错题给 AI",`共 ${rows.length} 句（最近一次答错或部分对、或刚开始记的句子，最多 40 句）。`,buildMd(rows,"错题集"),false);
+}
+
+/* ---------- sheet & toast ---------- */
+const sheet=document.getElementById("sheet"),stext=document.getElementById("sheet-text");
+function openSheet(title,desc,text,isRestore){
+  document.getElementById("sheet-title").textContent=title;document.getElementById("sheet-desc").textContent=desc;
+  stext.value=text;stext.readOnly=!isRestore;stext.placeholder=isRestore?"在这里粘贴备份代码":"";
+  document.getElementById("sheet-copy").hidden=isRestore;document.getElementById("sheet-apply").hidden=!isRestore;
+  sheet.hidden=false;if(isRestore)stext.focus();
+}
+document.getElementById("sheet-close").onclick=()=>{sheet.hidden=true};
+sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
+document.getElementById("sheet-copy").onclick=()=>{
+  const fallback=()=>{stext.focus();stext.select();toast("已选中全部文字，请手动复制")};
+  try{navigator.clipboard.writeText(stext.value).then(()=>toast("已复制，去粘贴给 AI 吧"),fallback)}catch(e){fallback()}
+};
+document.getElementById("sheet-apply").onclick=()=>{
+  try{const o=JSON.parse(stext.value);if(!o||typeof o!=="object"||!o.units)throw 0;S=Object.assign(fresh(),o);save();sheet.hidden=true;toast("进度已恢复");home()}
+  catch(e){toast("这段代码无法识别，请粘贴完整的备份代码")}
+};
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400)}
+
+home();
+</script>
+</body>
+</html>
