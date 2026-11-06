@@ -1011,7 +1011,7 @@ function save(){S.ts=Date.now();localSave();scheduleUpload()}
 
 /* ---------- cloud sync (Firebase) ---------- */
 let FB=false,auth=null,db=null,USER=null,SYNC={state:"ok",at:0},upTimer=null;
-try{if(window.firebase&&!String(FIREBASE_CONFIG.apiKey).startsWith("PASTE")){firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();FB=true}}catch(e){console.error(e)}
+try{if(window.firebase&&!String(FIREBASE_CONFIG.apiKey).startsWith("PASTE")){firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();FB=true;try{auth.languageCode="zh-CN"}catch(e){}}}catch(e){console.error(e)}
 function merge(a,b){
   const o=fresh();o.ts=Math.max(a.ts||0,b.ts||0);
   o.unlockAll=((a.ts||0)>=(b.ts||0)?a:b).unlockAll||false;
@@ -1024,9 +1024,10 @@ function merge(a,b){
   const seen=new Set();o.log=[...(a.log||[]),...(b.log||[])].filter(l=>{const id=l.t+"-"+l.u;if(seen.has(id))return false;seen.add(id);return true}).sort((p,q)=>p.t-q.t).slice(-500);
   return o;
 }
-function scheduleUpload(){if(!FB||!USER)return;SYNC.state="busy";renderAcct();clearTimeout(upTimer);upTimer=setTimeout(upload,1200)}
+const canSync=()=>FB&&USER&&USER.emailVerified;
+function scheduleUpload(){if(!canSync())return;SYNC.state="busy";renderAcct();clearTimeout(upTimer);upTimer=setTimeout(upload,1200)}
 async function upload(){
-  clearTimeout(upTimer);upTimer=null;if(!FB||!USER)return;
+  clearTimeout(upTimer);upTimer=null;if(!canSync())return;
   try{await db.collection("users").doc(USER.uid).set({data:JSON.stringify(S),updatedAt:S.ts||Date.now(),email:USER.email||""});SYNC={state:"ok",at:Date.now()}}
   catch(e){console.error(e);SYNC={state:"err",at:SYNC.at};setTimeout(scheduleUpload,15000)}
   renderAcct();
@@ -1044,9 +1045,26 @@ function renderAcct(){
   if(!FB){el.innerHTML=`<span class="dot"></span><span class="txt muted">本机模式：云同步还没配置，进度只存在这台设备上</span>`;return}
   if(!USER){el.innerHTML=`<span class="dot"></span><span class="txt">未登录 · 进度只存在这台设备上</span><button class="primary" id="acct-in">登录 / 注册</button>`;
     document.getElementById("acct-in").onclick=openLogin;return}
+  if(!USER.emailVerified){
+    el.innerHTML=`<span class="dot busy"></span><span class="txt">${esc(USER.email||"")} · 邮箱还没验证。请打开验证邮件里的链接（也可能在垃圾邮件里），然后点“我已验证”。验证前进度只存在这台设备上。</span><button class="primary" id="acct-chk">我已验证</button><button id="acct-resend">重新发送</button><button class="ghost" id="acct-out">退出登录</button>`;
+    document.getElementById("acct-chk").onclick=()=>checkVerified(true);
+    document.getElementById("acct-resend").onclick=()=>sendVerify().then(()=>toast("验证邮件已重新发送")).catch(e=>toast(AUTH_ERR[e.code]||"发送失败："+(e.code||e.message)));
+    document.getElementById("acct-out").onclick=logout;return}
   const st=SYNC.state==="busy"?"同步中…":SYNC.state==="err"?"同步失败，稍后自动重试":"已同步 "+ago(SYNC.at);
   el.innerHTML=`<span class="dot ${SYNC.state}"></span><span class="txt">${esc(USER.email||"")} · ${st}</span><button class="ghost" id="acct-out">退出登录</button>`;
   document.getElementById("acct-out").onclick=logout;
+}
+function sendVerify(){
+  const u=auth.currentUser;if(!u)return Promise.resolve();
+  const url=location.href.split("#")[0];
+  return u.sendEmailVerification({url}).catch(()=>u.sendEmailVerification());
+}
+async function checkVerified(manual){
+  const u=auth.currentUser;if(!u)return;
+  try{await u.reload();USER=auth.currentUser;
+    if(USER.emailVerified){await USER.getIdToken(true);toast("邮箱验证成功，开始同步进度");renderAcct();pull()}
+    else{renderAcct();if(manual)toast("还没检测到验证。请先点邮件里的链接，再回来点“我已验证”")}
+  }catch(e){if(manual)toast(AUTH_ERR[e.code]||"检查失败，请稍后再试")}
 }
 async function logout(){
   if(upTimer)await upload();
@@ -1062,18 +1080,18 @@ function lgMsg(t,info){const m=document.getElementById("lg-msg");m.textContent=t
 function lgDo(fn){
   const em=document.getElementById("lg-email").value.trim(),pw=document.getElementById("lg-pass").value;
   if(!em){lgMsg("请填写邮箱。");return}
-  fn(em,pw).then(()=>{document.getElementById("login").hidden=true;document.getElementById("lg-pass").value="";toast("登录成功，正在同步进度")})
+  fn(em,pw).then(()=>{document.getElementById("login").hidden=true;document.getElementById("lg-pass").value="";if(auth.currentUser&&auth.currentUser.emailVerified)toast("登录成功，正在同步进度")})
     .catch(e=>lgMsg(AUTH_ERR[e.code]||("出错了："+(e.code||e.message))));
 }
 document.getElementById("lg-close").onclick=()=>{document.getElementById("login").hidden=true};
 document.getElementById("lg-in").onclick=()=>lgDo((e,p)=>auth.signInWithEmailAndPassword(e,p));
-document.getElementById("lg-up").onclick=()=>lgDo((e,p)=>auth.createUserWithEmailAndPassword(e,p));
+document.getElementById("lg-up").onclick=()=>lgDo((e,p)=>auth.createUserWithEmailAndPassword(e,p).then(c=>{USER=c.user;return sendVerify().then(()=>toast("注册成功，验证邮件已发到 "+e)).catch(()=>{})}));
 document.getElementById("lg-pass").onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();document.getElementById("lg-in").click()}};
 document.getElementById("lg-reset").onclick=()=>{
   const em=document.getElementById("lg-email").value.trim();if(!em){lgMsg("先在上面填好你的邮箱，再点“忘记密码”。");return}
   auth.sendPasswordResetEmail(em).then(()=>lgMsg(`重置密码的邮件已发到 ${em}，没看到的话请查一下垃圾邮件。`,true)).catch(e=>lgMsg(AUTH_ERR[e.code]||("出错了："+e.code)));
 };
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&upTimer)upload()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&upTimer)upload();if(document.visibilityState==="visible"&&FB&&USER&&!USER.emailVerified)checkVerified(false)});
 setInterval(renderAcct,30000);
 
 const uState=n=>S.units[n]||{attempts:0,best:0,last:0,mastered:false};
@@ -1343,7 +1361,7 @@ document.getElementById("sheet-apply").onclick=()=>{
 let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400)}
 
 home();
-if(FB)auth.onAuthStateChanged(u=>{USER=u;renderAcct();if(u)pull()});
+if(FB)auth.onAuthStateChanged(u=>{USER=u;renderAcct();if(u&&u.emailVerified)pull()});
 </script>
 </body>
 </html>
